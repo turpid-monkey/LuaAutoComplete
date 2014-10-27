@@ -1,0 +1,49 @@
+apply plugin: 'java'
+apply plugin: 'me.champeau.gradle.antlr4'
+
+jar.dependsOn compileJava
+compileJava.dependsOn antlr4
+
+sourceCompatibility = '1.8'
+[compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+
+compileJava {
+   
+}
+
+antlr4 {
+    output=file('src/main/java/org/mism/forfife/lua')
+    
+    extraArgs =['-package','org.mism.forfife.lua']
+}
+
+repositories {
+    mavenCentral()
+    jcenter()
+    // You may define additional repositories, or even remove "mavenCentral()".
+    // Read more about repositories here:
+    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:repositories
+}
+
+buildscript {
+    repositories {
+        maven {
+            name 'JFrog OSS snapshot repo'
+            url  'https://oss.jfrog.org/oss-snapshot-local/'
+        }
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'me.champeau.gradle:antlr4-gradle-plugin:0.1'
+    }
+}
+
+dependencies {
+    // TODO: Add dependencies here ...
+    // You can read more about how to add dependency here:
+    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
+    testCompile group: 'junit', name: 'junit', version: '4.10'
+    compile files("./lib/antlr-runtime-4.4.jar","../RSyntaxTextArea/build/libs/RSyntaxTextArea-2.5.4.jar", "../AutoComplete/build/libs/AutoComplete-2.5.4.jar")
+}
