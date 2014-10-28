@@ -50,6 +50,9 @@ dependencies {
     // TODO: Add dependencies here ...
     // You can read more about how to add dependency here:
     //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
-    testCompile group: 'junit', name: 'junit', version: '4.10'
-    compile files("./lib/antlr-runtime-4.4.jar","../RSyntaxTextArea/build/libs/RSyntaxTextArea-2.5.4.jar", "../AutoComplete/build/libs/AutoComplete-2.5.4.jar")
+    //testCompile group: 'junit', name: 'junit', version: '4.10'
+    //compile files("./lib/antlr-runtime-4.4.jar","../RSyntaxTextArea/build/libs/RSyntaxTextArea-2.5.4.jar", "../AutoComplete/build/libs/AutoComplete-2.5.4.jar")
+
+    compile project(':AutoComplete')
+    compile project(':RSyntaxTextArea')
 }
