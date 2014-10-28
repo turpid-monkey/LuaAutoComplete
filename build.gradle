@@ -32,7 +32,13 @@ buildscript {
             name 'JFrog OSS snapshot repo'
             url  'https://oss.jfrog.org/oss-snapshot-local/'
         }
-        jcenter()
+        
+        // hopefully fixes #1 (https://github.com/turpid-monkey/LuaCompletionProvider/issues/1)
+        // jcenter()
+        maven {
+            name 'jcenter'
+            url  'http://jcenter.bintray.com'
+        }
     }
 
     dependencies {
