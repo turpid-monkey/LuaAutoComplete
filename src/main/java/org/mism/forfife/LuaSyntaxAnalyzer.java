@@ -94,14 +94,13 @@ public class LuaSyntaxAnalyzer {
      * @param luaScript
      * @return whether the parsing went well
      */
-    public boolean initCompletions(String luaScript) {
+    public boolean initCompletions(String luaScript, int line, int pos) {
         try {
-
             ANTLRInputStream str = new ANTLRInputStream(new StringReader(luaScript));
             Lexer lx = new LuaLexer(str);
             CommonTokenStream tokStr = new CommonTokenStream(lx);
             LuaParser parser = new LuaParser(tokStr);
-            parser.addParseListener(new LuaListener());
+            parser.addParseListener(new LuaListener(line, pos));
             context = parser.chunk();
             return true;
         } catch (Exception e) {
@@ -110,6 +109,13 @@ public class LuaSyntaxAnalyzer {
     }
 
     private class LuaListener extends LuaBaseListener {
+    	
+    	int line, pos;
+    	
+    	LuaListener(int line, int pos) {
+			this.line = line;
+			this.pos = pos;
+		}
 
         @Override
         public void exitVar(LuaParser.VarContext ctx) {

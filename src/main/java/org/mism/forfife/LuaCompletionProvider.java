@@ -27,94 +27,96 @@ package org.mism.forfife;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+
 import javax.swing.text.JTextComponent;
+
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.FunctionCompletion;
+import org.fife.ui.autocomplete.ShorthandCompletion;
 import org.fife.ui.autocomplete.VariableCompletion;
+import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
-public class LuaCompletionProvider extends DefaultCompletionProvider
-{
-    LuaCompletionHandler handler = new LuaCompletionHandler();
-    
-    static String[] LUA_KEY_WORDS = {"and","break","do","else","elseif","end",
-        "false","for","function","if","in","local","nil","not","or",
-        "repeat","return","then","true","until","while"};
+public class LuaCompletionProvider extends DefaultCompletionProvider {
+	LuaCompletionHandler handler = new LuaCompletionHandler();
 
-    String currentScript = "";
+	static String[] LUA_KEY_WORDS = { "and", "break", "do", "else", "elseif",
+			"end", "false", "for", "function", "if", "in", "local", "nil",
+			"not", "or", "repeat", "return", "then", "true", "until", "while" };
 
-    public LuaCompletionHandler getHandler() {
-        return handler;
-    }
-    
-    public LuaCompletionProvider() {
-        initStaticCompletions();
-        setParameterizedCompletionParams('(', ",", ')');
-    }
-    
-    protected void initStaticCompletions()
-    {
-        for (String keyWord : LUA_KEY_WORDS)
-        {
-            addCompletion(new BasicCompletion(this, keyWord));
-        }
-    }
-    
-    protected String i18n(Object o)
-    {
-        return o.toString();
-    }
-    
-    protected void initDynamicCompletions(LuaSyntaxAnalyzer analyzer)
-    {
-        for (LuaSyntaxAnalyzer.Completion comp : analyzer.getCompletions())
-        {
-            switch(comp.getType())
-            {
-                case FUNCTION:
-                    addCompletion(
-                    new FunctionCompletion(
-                            this,
-                            comp.getText(),""));
-                    break;
-                case VARIABLE:
-                    addCompletion(new VariableCompletion(
-                            this,
-                            comp.getText(),""));
-                           
-            }
-        }
-    }
-    
-    void refreshCompletions(String luaScript)
-    {
-        luaScript = luaScript.trim();
-        if (currentScript.equals(luaScript))
-        {
-            return;
-        }
-        currentScript = luaScript;
-        LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
-        if(!analyzer.initCompletions(luaScript)) return;
-        handler.validChange(analyzer.getContext());
-        super.clear();
-        initStaticCompletions();
-        initDynamicCompletions(analyzer);
-        
-        // System.out.println("refreshCompletions finished");
-    }
-    
-    public void listenTo(JTextComponent textArea)
-    {
-        refreshCompletions(textArea.getText());
-        textArea.addKeyListener(new KeyAdapter() {
+	static String[][] LUA_SHORTCUTS = {
+			{ "for i", "for i=1 to 10 do\n\nend\n" },
+			{ "for j", "for j=1 to 10 do\n\nend\n" } };
 
-            @Override
-            public void keyTyped(KeyEvent e) {
-                String curr = textArea.getText();
-                refreshCompletions(curr);
-            }
-        });
-    }
-   
+	String currentScript = "";
+
+	public LuaCompletionHandler getHandler() {
+		return handler;
+	}
+
+	public LuaCompletionProvider() {
+		initStaticCompletions();
+		setParameterizedCompletionParams('(', ",", ')');
+	}
+
+	protected void initStaticCompletions() {
+		for (String keyWord : LUA_KEY_WORDS) {
+			addCompletion(new BasicCompletion(this, keyWord, "LUA keyword."));
+		}
+		for (String[] shortCut : LUA_SHORTCUTS) {
+			addCompletion(new ShorthandCompletion(this, shortCut[0],
+					shortCut[1]));
+		}
+	}
+
+	protected String i18n(Object o) {
+		return o.toString();
+	}
+
+	protected void initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
+		for (LuaSyntaxAnalyzer.Completion comp : analyzer.getCompletions()) {
+			switch (comp.getType()) {
+			case FUNCTION:
+				addCompletion(new FunctionCompletion(this, comp.getText(), "function"));
+				break;
+			case VARIABLE:
+				addCompletion(new VariableCompletion(this, comp.getText(), "variable"));
+
+			}
+		}
+	}
+
+	void refreshCompletions(String luaScript, int line, int pos) {
+		luaScript = luaScript.trim();
+		if (currentScript.equals(luaScript)) {
+			return;
+		}
+		currentScript = luaScript;
+		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
+		if (!analyzer.initCompletions(luaScript, line, pos))
+			return;
+		handler.validChange(analyzer.getContext());
+		super.clear();
+		initStaticCompletions();
+		initDynamicCompletions(analyzer);
+
+		// System.out.println("refreshCompletions finished");
+	}
+
+	public void listenTo(RSyntaxTextArea textArea) {
+		refreshCompletions(textArea.getText(), textArea.getCaretLineNumber(),
+				textArea.getCaretOffsetFromLineStart());
+		textArea.addKeyListener(new KeyAdapter() {
+
+			@Override
+			public void keyTyped(KeyEvent e) {
+				String curr = textArea.getText();
+				int line, pos;
+				line = textArea.getCaretLineNumber();
+				pos = textArea.getCaretOffsetFromLineStart();
+				refreshCompletions(curr, line, pos);
+			}
+		});
+	}
+
 }

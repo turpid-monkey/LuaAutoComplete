@@ -21,7 +21,7 @@ public class LuaCompletionTests {
     public void testLuaSyntaxAnalyzer()
     {
         LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-        an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n");
+        an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n", 0, 0);
         assertEquals("foo", an.getCompletions().iterator().next().getText());
         assertEquals(an.getCompletions().size(), 4);
     }
