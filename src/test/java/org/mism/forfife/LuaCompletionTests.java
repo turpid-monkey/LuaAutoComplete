@@ -23,7 +23,7 @@ public class LuaCompletionTests {
         LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
         an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n", 1, 0);
         assertEquals("foo", an.getCompletions().iterator().next().getText());
-        assertEquals(3, an.getCompletions().size());
+        assertEquals(2, an.getCompletions().size());
     }
     
     @Test
@@ -53,5 +53,31 @@ public class LuaCompletionTests {
         assertEquals("b", completions.next().getText());
         assertEquals("i", completions.next().getText());
         assertEquals(an.getCompletions().size(), 2);
+    }
+    
+    @Test
+    public void testFunctionParameterParsing()
+    {
+    	LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+    	an.initCompletions("function paramsTest(a,b,c) return 5 end",1,0);
+    	Iterator<Completion> completions = an.getCompletions().iterator();
+    	assertEquals("paramsTest", completions.next().getText());
+    	assertEquals("a", completions.next().getText());
+    	assertEquals("b", completions.next().getText());
+    	assertEquals("c", completions.next().getText());
+    	assertEquals(3, an.getFunctionParams("paramsTest").size());
+    }
+    
+    @Test
+    public void testEndOfBlockParsing()
+    {
+    	LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+    	an.initCompletions("function paramsTest(a,b,c) return 5 end",1,40);
+    	Iterator<Completion> completions = an.getCompletions().iterator();
+    	assertEquals("paramsTest", completions.next().getText());
+    	assertEquals("a", completions.next().getText());
+    	assertEquals("b", completions.next().getText());
+    	assertEquals("c", completions.next().getText());
+    	assertEquals(3, an.getFunctionParams("paramsTest").size());
     }
 }

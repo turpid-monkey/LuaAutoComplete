@@ -27,10 +27,14 @@ package org.mism.forfife;
 
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.fife.ui.autocomplete.BasicCompletion;
+import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.FunctionCompletion;
+import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.fife.ui.autocomplete.ShorthandCompletion;
 import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
@@ -53,16 +57,17 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	}
 
 	public LuaCompletionProvider() {
+		// super.comparator = new LuaCompletionComparator();
 		initStaticCompletions();
 		setParameterizedCompletionParams('(', ",", ')');
 	}
 
 	protected void initStaticCompletions() {
 		for (String keyWord : LUA_KEY_WORDS) {
-			addCompletion(new BasicCompletion(this, keyWord, "LUA keyword."));
+			checkProviderAndAdd(new BasicCompletion(this, keyWord, "LUA keyword."));
 		}
 		for (String[] shortCut : LUA_SHORTCUTS) {
-			addCompletion(new ShorthandCompletion(this, shortCut[0],
+			checkProviderAndAdd(new ShorthandCompletion(this, shortCut[0],
 					shortCut[1]));
 		}
 	}
@@ -72,16 +77,21 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	}
 
 	protected void initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
+		List<Completion> completions = new ArrayList<>();
 		for (LuaSyntaxAnalyzer.Completion comp : analyzer.getCompletions()) {
 			switch (comp.getType()) {
 			case FUNCTION:
-				addCompletion(new FunctionCompletion(this, comp.getText(), "function"));
+				FunctionCompletion fc = new FunctionCompletion(this, comp.getText(), "function");
+				List<Parameter> params = analyzer.getFunctionParams(comp.getText());
+				fc.setParams(params);
+				completions.add(fc);
 				break;
 			case VARIABLE:
-				addCompletion(new VariableCompletion(this, comp.getText(), "variable"));
+				completions.add(new VariableCompletion(this, comp.getText(), "variable"));
 
 			}
 		}
+		addCompletions(completions);
 	}
 
 	void refreshCompletions(String luaScript, int line, int pos) {
@@ -97,9 +107,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		super.clear();
 		initStaticCompletions();
 		initDynamicCompletions(analyzer);
-
-		// System.out.println("refreshCompletions finished");
-	}
+    }
 
 	public void listenTo(RSyntaxTextArea textArea) {
 		refreshCompletions(textArea.getText(), textArea.getCaretLineNumber(),

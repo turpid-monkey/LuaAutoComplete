@@ -25,44 +25,47 @@
  */
 package org.mism.forfife;
 
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Lexer;
+import javax.swing.text.BadLocationException;
+
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.folding.Fold;
-import org.fife.ui.rsyntaxtextarea.folding.FoldParser;
-import org.mism.forfife.lua.LuaLexer;
-import org.mism.forfife.lua.LuaParser;
-/**
- * Register this class with org.fife.ui.rsyntaxtextarea.folding.FoldParserManager.get() singleton instance.
- * 
- * @author tr1nergy
- *
- */
-public class LuaFoldParser implements FoldParser {
+import org.fife.ui.rsyntaxtextarea.folding.FoldType;
+import org.mism.forfife.lua.LuaBaseVisitor;
+import org.mism.forfife.lua.LuaParser.BlockContext;
 
-	@Override
-	public List<Fold> getFolds(RSyntaxTextArea textArea) {
-		try {
-			
-			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
-					textArea.getText()));
-			Lexer lx = new LuaLexer(str);
-			CommonTokenStream tokStr = new CommonTokenStream(lx);
-			LuaParser parser = new LuaParser(tokStr);
-			LuaFoldsVisitor lfv = new LuaFoldsVisitor(textArea);
-			lfv.visit(parser.chunk());
-			// System.out.println("Found " + lfv.getFolds().size() + " folds.");
-			return lfv.getFolds();
-		} catch (Exception e) {
-			// System.out.println("No folds due to exception.");
-			e.printStackTrace();
-			return new ArrayList<Fold>();
-		}
+class LuaFoldsVisitor extends LuaBaseVisitor<Void> {
+	private final List<Fold> folds = new ArrayList<Fold>();
+	private final RSyntaxTextArea textArea;
+
+	public LuaFoldsVisitor(RSyntaxTextArea textArea) {
+		this.textArea = textArea;
 	}
 
+	public List<Fold> getFolds() {
+		return folds;
+	}
+
+	@Override
+	public Void visitBlock(BlockContext ctx) {
+		int offset;
+		try {
+			offset = textArea.getLineStartOffset(ctx.getParent().getStart()
+					.getLine() - 1)
+					+ ctx.getParent().getStart().getCharPositionInLine();
+			if (offset != 0) {
+				int endOffset = textArea.getLineStartOffset(ctx.getParent()
+						.getStop().getLine() - 1)
+						+ ctx.getParent().getStop().getCharPositionInLine();
+				Fold f = new Fold(FoldType.CODE, textArea, offset);
+				f.setEndOffset(endOffset);
+				folds.add(f);
+			}
+		} catch (BadLocationException e) {
+			throw new RuntimeException(e);
+		}
+		return super.visitBlock(ctx);
+	}
 }
