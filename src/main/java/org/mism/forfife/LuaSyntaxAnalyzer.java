@@ -212,7 +212,8 @@ public class LuaSyntaxAnalyzer {
 
 		private void popScope(int tokenLine, int tokenPos) {
 			if (!frozen && tokenLine >= line && tokenPos > pos) {
-				relevantStack = (Stack<Map<String, Completion>>) scopes.clone();
+				relevantStack = new Stack<>();
+				relevantStack.addAll(scopes);
 				frozen = true;
 			}
 			scopes.pop();
