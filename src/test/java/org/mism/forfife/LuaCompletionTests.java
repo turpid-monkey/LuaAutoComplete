@@ -5,12 +5,12 @@
  */
 package org.mism.forfife;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
+import static org.junit.Assert.assertEquals;
+
+import java.util.Iterator;
+
 import org.junit.Test;
-import static org.junit.Assert.*;
+import org.mism.forfife.LuaSyntaxAnalyzer.Completion;
 
 /**
  *
@@ -21,8 +21,37 @@ public class LuaCompletionTests {
     public void testLuaSyntaxAnalyzer()
     {
         LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-        an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n", 0, 0);
+        an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n", 1, 0);
         assertEquals("foo", an.getCompletions().iterator().next().getText());
-        assertEquals(an.getCompletions().size(), 4);
+        assertEquals(3, an.getCompletions().size());
+    }
+    
+    @Test
+    public void testLuaScoping_SimpleSeparateScopes1()
+    {
+    	 LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+         an.initCompletions("do i=5 end\ndo q=5 end\n", 1, 0);
+         assertEquals("i", an.getCompletions().iterator().next().getText());
+         assertEquals(an.getCompletions().size(), 1);
+    }
+    
+    @Test
+    public void testLuaScoping_SimpleSeparateScopes2()
+    {
+    	 LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+         an.initCompletions("do i=5 end\ndo q=5 end\n", 2, 1);
+         assertEquals("q", an.getCompletions().iterator().next().getText());
+         assertEquals(an.getCompletions().size(), 1);
+    }
+    
+    @Test
+    public void testLuaScoping_StackedSeparateScopes()
+    {
+    	LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+        an.initCompletions("b=10\ndo i=5 end\ndo q=5 end\n", 2, 1);
+        Iterator<Completion> completions = an.getCompletions().iterator();
+        assertEquals("b", completions.next().getText());
+        assertEquals("i", completions.next().getText());
+        assertEquals(an.getCompletions().size(), 2);
     }
 }

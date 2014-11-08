@@ -26,15 +26,22 @@
 package org.mism.forfife;
 
 import java.io.StringReader;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
+import java.util.Stack;
 import java.util.TreeMap;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.Token;
 import org.mism.forfife.lua.LuaBaseListener;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
+import org.mism.forfife.lua.LuaParser.BlockContext;
+import org.mism.forfife.lua.LuaParser.FuncbodyContext;
 
 /**
  *
@@ -78,10 +85,16 @@ public class LuaSyntaxAnalyzer {
     }
 
     LuaParser.ChunkContext context;
-    Map<String, Completion> completions = new TreeMap<>();
+    
+	Stack<Map<String,Completion>> relevantStack = new Stack<>();
 
     public Collection<Completion> getCompletions() {
-        return completions.values();
+    	ArrayList<Completion> completions = new ArrayList<>();
+    	for (Map<String,Completion> scope :relevantStack)
+    	{
+    		completions.addAll(scope.values());
+    	}
+        return completions;
     }
 
     public LuaParser.ChunkContext getContext() {
@@ -111,25 +124,64 @@ public class LuaSyntaxAnalyzer {
     private class LuaListener extends LuaBaseListener {
     	
     	int line, pos;
+    	boolean frozen = false;
+    	Stack<Map<String,Completion>> scopes = new Stack<>();
     	
     	LuaListener(int line, int pos) {
-			this.line = line;
+    		if (line < 1) throw new IllegalArgumentException("Line argument should be greater or equal to 1.");
+    		if (pos < 0) throw new IllegalArgumentException("Position in line argument should be greater 0.");
+ 			this.line = line;
 			this.pos = pos;
 		}
 
         @Override
         public void exitVar(LuaParser.VarContext ctx) {
-            completions.put(ctx.getText(),
+            scopes.peek().put(ctx.getText(),
                     Completion.newInstance(CompletionType.VARIABLE, ctx.getText(), ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine()));
-            super.exitVar(ctx);
         }
 
         @Override
         public void exitFuncname(LuaParser.FuncnameContext ctx) {
             
-            completions.put(ctx.getText(),
+            scopes.peek().put(ctx.getText(),
                     Completion.newInstance(CompletionType.FUNCTION, ctx.getText(), ctx.getStart().getLine(), ctx.getStart().getCharPositionInLine()));
-            super.exitFuncname(ctx);
+        }
+        
+        @Override
+        public void enterBlock(BlockContext ctx) {
+        	pushScope();
+        }
+        
+        @Override
+        public void enterFuncbody(FuncbodyContext ctx) {
+        	pushScope();
+        }
+        
+        @Override
+        public void exitFuncbody(FuncbodyContext ctx) {
+        	Token start = ctx.getStart();
+        	popScope(start.getLine(), start.getCharPositionInLine());
+        }
+        
+        private void pushScope()
+        {
+        	scopes.push(new TreeMap<>());
+        }
+        
+        private void popScope(int tokenLine, int tokenPos)
+        {
+        	if (!frozen && tokenLine>=line && tokenPos>pos)
+        	{
+        	   	relevantStack = (Stack<Map<String, Completion>>) scopes.clone();
+        	   	frozen = true;
+        	}
+        	scopes.pop();
+        }
+        
+        @Override
+        public void exitBlock(BlockContext ctx) {
+        	Token start = ctx.getStart();
+        	popScope(start.getLine(), start.getCharPositionInLine());
         }
     }
 }
