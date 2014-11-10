@@ -89,6 +89,7 @@ public class LuaSyntaxAnalyzer {
 	}
 
 	LuaParser.ChunkContext context;
+	int endIdx;
 
 	Stack<Map<String, Completion>> relevantStack = new Stack<>();
 	
@@ -111,14 +112,15 @@ public class LuaSyntaxAnalyzer {
 	 * @param luaScript
 	 * @return whether the parsing went well
 	 */
-	public boolean initCompletions(String luaScript, int line, int pos) {
+	public boolean initCompletions(String luaScript, CaretInfo info) {
 		try {
+			endIdx = luaScript.trim().length() - 1;
 			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
 					luaScript));
 			Lexer lx = new LuaLexer(str);
 			CommonTokenStream tokStr = new CommonTokenStream(lx);
 			LuaParser parser = new LuaParser(tokStr);
-			parser.addParseListener(new LuaListener(line, pos));
+			parser.addParseListener(new LuaListener(info));
 			context = parser.chunk();
 			return true;
 		} catch (Exception e) {
@@ -128,20 +130,13 @@ public class LuaSyntaxAnalyzer {
 
 	private class LuaListener extends LuaBaseListener {
 
-		int line, pos;
+		CaretInfo info;
 		boolean frozen = false;
 		Stack<Map<String, Completion>> scopes = new Stack<>();
 		String currentFunction;
 
-		LuaListener(int line, int pos) {
-			if (line < 1)
-				throw new IllegalArgumentException(
-						"Line argument should be greater or equal to 1.");
-			if (pos < 0)
-				throw new IllegalArgumentException(
-						"Position in line argument should be greater 0.");
-			this.line = line;
-			this.pos = pos;
+		LuaListener(CaretInfo info) {
+			this.info = info;
 		}
 
 		@Override
@@ -175,7 +170,7 @@ public class LuaSyntaxAnalyzer {
 
 		@Override
 		public void exitFuncbody(FuncbodyContext ctx) {
-			Token start = ctx.getStart();
+			Token stop = ctx.getStop();
 			if (ctx.getChildCount()==5)
 			{
 				if (ctx.getChild(0).getText().equals("("))
@@ -203,15 +198,15 @@ public class LuaSyntaxAnalyzer {
 					}
 				}
 			}
-			popScope(start.getLine(), start.getCharPositionInLine());
+			popScope(stop.getStopIndex());
 		}
 
 		private void pushScope() {
 			scopes.push(new TreeMap<>());
 		}
 
-		private void popScope(int tokenLine, int tokenPos) {
-			if (!frozen && tokenLine >= line && tokenPos > pos) {
+		private void popScope(int offset) {
+			if (!frozen && offset >= info.getPosition()) {
 				relevantStack = new Stack<>();
 				relevantStack.addAll(scopes);
 				frozen = true;
@@ -222,7 +217,9 @@ public class LuaSyntaxAnalyzer {
 		@Override
 		public void exitBlock(BlockContext ctx) {
 			Token stop = ctx.getStop();
-			popScope(stop.getLine(), stop.getCharPositionInLine());
+			System.out.println("Block ends at pos " + ctx.getStop().getStopIndex() + ", stream ends at " + endIdx);
+			if (stop.getStopIndex() == endIdx) return; // never pop the last scope!
+			popScope(stop.getStopIndex());
 		}
 	}
 

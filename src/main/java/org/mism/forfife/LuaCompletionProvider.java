@@ -94,14 +94,14 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		addCompletions(completions);
 	}
 
-	void refreshCompletions(String luaScript, int line, int pos) {
+	void refreshCompletions(String luaScript, CaretInfo info) {
 		luaScript = luaScript.trim();
 		if (currentScript.equals(luaScript)) {
 			return;
 		}
 		currentScript = luaScript;
 		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
-		if (!analyzer.initCompletions(luaScript, line, pos))
+		if (!analyzer.initCompletions(luaScript, info))
 			return;
 		handler.validChange(analyzer.getContext());
 		super.clear();
@@ -110,19 +110,20 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
     }
 
 	public void listenTo(RSyntaxTextArea textArea) {
-		refreshCompletions(textArea.getText(), textArea.getCaretLineNumber(),
-				textArea.getCaretOffsetFromLineStart());
+		refreshCompletions(textArea.getText(), getCaretInfoFor(textArea));
 		textArea.addKeyListener(new KeyAdapter() {
 
 			@Override
 			public void keyTyped(KeyEvent e) {
 				String curr = textArea.getText();
-				int line, pos;
-				line = textArea.getCaretLineNumber();
-				pos = textArea.getCaretOffsetFromLineStart();
-				refreshCompletions(curr, line, pos);
+				CaretInfo info = getCaretInfoFor(textArea);
+				refreshCompletions(curr, info);
 			}
 		});
 	}
-
+	
+	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea)
+	{
+		return CaretInfo.newInstance(textArea.getCaretPosition(), textArea.getCaretLineNumber(), textArea.getCaretOffsetFromLineStart(), textArea.getSelectedText()!=null, textArea.getSelectionStart(), textArea.getSelectionEnd());
+	}
 }

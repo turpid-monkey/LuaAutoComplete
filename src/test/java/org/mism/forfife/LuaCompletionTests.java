@@ -21,7 +21,8 @@ public class LuaCompletionTests {
     public void testLuaSyntaxAnalyzer()
     {
         LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-        an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n", 1, 0);
+        CaretInfo c = CaretInfo.HOME;
+        an.initCompletions("foo = function (n) return n*2 end\nfunction test(q) return q end\n\n", c);
         assertEquals("foo", an.getCompletions().iterator().next().getText());
         assertEquals(2, an.getCompletions().size());
     }
@@ -30,7 +31,8 @@ public class LuaCompletionTests {
     public void testLuaScoping_SimpleSeparateScopes1()
     {
     	 LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-         an.initCompletions("do i=5 end\ndo q=5 end\n", 1, 0);
+    	 CaretInfo c = CaretInfo.HOME;
+         an.initCompletions("do i=5 end\ndo q=5 end\n", c);
          assertEquals("i", an.getCompletions().iterator().next().getText());
          assertEquals(an.getCompletions().size(), 1);
     }
@@ -39,7 +41,8 @@ public class LuaCompletionTests {
     public void testLuaScoping_SimpleSeparateScopes2()
     {
     	 LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-         an.initCompletions("do i=5 end\ndo q=5 end\n", 2, 1);
+    	 CaretInfo c = CaretInfo.newInstance(13);
+         an.initCompletions("do i=5 end\ndo q=5 end\n", c);
          assertEquals("q", an.getCompletions().iterator().next().getText());
          assertEquals(an.getCompletions().size(), 1);
     }
@@ -48,7 +51,8 @@ public class LuaCompletionTests {
     public void testLuaScoping_StackedSeparateScopes()
     {
     	LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-        an.initCompletions("b=10\ndo i=5 end\ndo q=5 end\n", 2, 1);
+    	CaretInfo c = CaretInfo.newInstance(10);
+        an.initCompletions("b=10\ndo i=5 end\ndo q=5 end\n", c);
         Iterator<Completion> completions = an.getCompletions().iterator();
         assertEquals("b", completions.next().getText());
         assertEquals("i", completions.next().getText());
@@ -59,7 +63,8 @@ public class LuaCompletionTests {
     public void testFunctionParameterParsing()
     {
     	LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-    	an.initCompletions("function paramsTest(a,b,c) return 5 end",1,0);
+    	CaretInfo c = CaretInfo.HOME;
+    	an.initCompletions("function paramsTest(a,b,c) return 5 end",c);
     	Iterator<Completion> completions = an.getCompletions().iterator();
     	assertEquals("paramsTest", completions.next().getText());
     	assertEquals("a", completions.next().getText());
@@ -72,7 +77,8 @@ public class LuaCompletionTests {
     public void testEndOfBlockParsing()
     {
     	LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-    	an.initCompletions("function paramsTest(a,b,c) return 5 end",1,40);
+    	CaretInfo c = CaretInfo.newInstance(40);
+    	an.initCompletions("function paramsTest(a,b,c) return 5 end",c);
     	Iterator<Completion> completions = an.getCompletions().iterator();
     	assertEquals("paramsTest", completions.next().getText());
     	assertEquals("a", completions.next().getText());
