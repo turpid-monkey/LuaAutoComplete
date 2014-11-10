@@ -124,6 +124,6 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	
 	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea)
 	{
-		return CaretInfo.newInstance(textArea.getCaretPosition(), textArea.getCaretLineNumber(), textArea.getCaretOffsetFromLineStart(), textArea.getSelectedText()!=null, textArea.getSelectionStart(), textArea.getSelectionEnd());
+		return CaretInfo.newInstance(textArea.getCaretPosition(), textArea.getCaretLineNumber() + 1, textArea.getCaretOffsetFromLineStart(), textArea.getSelectedText()!=null, textArea.getSelectionStart(), textArea.getSelectionEnd());
 	}
 }

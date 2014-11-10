@@ -86,6 +86,8 @@ public class LuaSyntaxAnalyzer {
 			c.pos = pos;
 			return c;
 		}
+		
+		public String toString() { return getType().name(); }
 	}
 
 	LuaParser.ChunkContext context;
@@ -203,22 +205,36 @@ public class LuaSyntaxAnalyzer {
 
 		private void pushScope() {
 			scopes.push(new TreeMap<>());
+			// System.out.println("Scope depth now " + scopes.size());
 		}
 
+		private void useScope()
+		{
+			relevantStack = new Stack<>();
+			relevantStack.addAll(scopes);
+			// System.out.println("Bingo: relevant scope id'd " + relevantStack);
+			frozen = true;
+		}
+		
 		private void popScope(int offset) {
+			// our caret offset lies in this block
 			if (!frozen && offset >= info.getPosition()) {
-				relevantStack = new Stack<>();
-				relevantStack.addAll(scopes);
-				frozen = true;
+				useScope();
 			}
+			// we are about to pop the last scope without having found
+			// the proper one - this should only be the case when 
+			// the caret pos is beyond the end of the block.
+			if (!frozen && scopes.size()==1 && info.getPosition() != 0)
+			{
+				useScope();
+			}
+			// System.out.println("Scope popped: " + scopes.peek());
 			scopes.pop();
 		}
 
 		@Override
 		public void exitBlock(BlockContext ctx) {
 			Token stop = ctx.getStop();
-			System.out.println("Block ends at pos " + ctx.getStop().getStopIndex() + ", stream ends at " + endIdx);
-			if (stop.getStopIndex() == endIdx) return; // never pop the last scope!
 			popScope(stop.getStopIndex());
 		}
 	}

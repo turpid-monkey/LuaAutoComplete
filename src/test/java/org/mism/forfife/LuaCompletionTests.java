@@ -81,9 +81,6 @@ public class LuaCompletionTests {
     	an.initCompletions("function paramsTest(a,b,c) return 5 end",c);
     	Iterator<Completion> completions = an.getCompletions().iterator();
     	assertEquals("paramsTest", completions.next().getText());
-    	assertEquals("a", completions.next().getText());
-    	assertEquals("b", completions.next().getText());
-    	assertEquals("c", completions.next().getText());
-    	assertEquals(3, an.getFunctionParams("paramsTest").size());
+       	assertEquals(3, an.getFunctionParams("paramsTest").size());
     }
 }
