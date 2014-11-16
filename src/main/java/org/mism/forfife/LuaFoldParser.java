@@ -56,13 +56,11 @@ public class LuaFoldParser implements FoldParser {
 			LuaParser parser = new LuaParser(tokStr);
 			LuaFoldsVisitor lfv = new LuaFoldsVisitor(textArea);
 			lfv.visit(parser.chunk());
-			// System.out.println("Found " + lfv.getFolds().size() + " folds.");
+			Logging.info("Found " + lfv.getFolds().size() + " folds.");
 			return lfv.getFolds();
 		} catch (Exception e) {
-			// System.out.println("No folds due to exception.");
-			e.printStackTrace();
+			Logging.error("No folds found due to exception", e);
 			return new ArrayList<Fold>();
 		}
 	}
-
 }

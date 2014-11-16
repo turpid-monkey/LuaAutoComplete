@@ -27,7 +27,6 @@ package org.mism.forfife;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Stack;
@@ -36,6 +35,7 @@ import java.util.TreeMap;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
@@ -86,18 +86,20 @@ public class LuaSyntaxAnalyzer {
 			c.pos = pos;
 			return c;
 		}
-		
-		public String toString() { return getType().name(); }
+
+		public String toString() {
+			return getType().name();
+		}
 	}
 
 	LuaParser.ChunkContext context;
 	int endIdx;
 
 	Stack<Map<String, Completion>> relevantStack = new Stack<>();
-	
-	Map<String,List<Parameter>> functionParams = new TreeMap<>();
 
-	public Collection<Completion> getCompletions() {
+	Map<String, List<Parameter>> functionParams = new TreeMap<>();
+
+	public List<Completion> getCompletions() {
 		ArrayList<Completion> completions = new ArrayList<>();
 		for (Map<String, Completion> scope : relevantStack) {
 			completions.addAll(scope.values());
@@ -125,7 +127,12 @@ public class LuaSyntaxAnalyzer {
 			parser.addParseListener(new LuaListener(info));
 			context = parser.chunk();
 			return true;
+		} catch (RecognitionException e) {
+			Logging.info("Parser unhappy, this is ok: " + e.getMessage());
+			return false;
 		} catch (Exception e) {
+			Logging.error(
+					"Bad code in completion-creation code, this is not ok.", e);
 			return false;
 		}
 	}
@@ -143,8 +150,9 @@ public class LuaSyntaxAnalyzer {
 
 		@Override
 		public void exitVar(LuaParser.VarContext ctx) {
+			String varName = ctx.getText();
 			scopes.peek().put(
-					ctx.getText(),
+					varName,
 					Completion.newInstance(CompletionType.VARIABLE, ctx
 							.getText(), ctx.getStart().getLine(), ctx
 							.getStart().getCharPositionInLine()));
@@ -152,7 +160,7 @@ public class LuaSyntaxAnalyzer {
 
 		@Override
 		public void exitFuncname(LuaParser.FuncnameContext ctx) {
-            currentFunction = ctx.getText();
+			currentFunction = ctx.getText();
 			scopes.peek().put(
 					ctx.getText(),
 					Completion.newInstance(CompletionType.FUNCTION, ctx
@@ -172,63 +180,79 @@ public class LuaSyntaxAnalyzer {
 
 		@Override
 		public void exitFuncbody(FuncbodyContext ctx) {
+			if (currentFunction == null) {
+				// anonymous function
+				try {
+					Token varName = ctx.getParent().getParent().getParent()
+							.getParent().getStart();
+					currentFunction = varName.getText();
+					Logging.info("Anonymous function hit. Redefining var '" + currentFunction + "' to a function.");
+					// var declaration in parent scope needs to be replaced.
+					scopes.get(scopes.size()-2).put(
+							currentFunction,
+							Completion.newInstance(CompletionType.FUNCTION,
+									currentFunction, ctx.getStart().getLine(),
+									ctx.getStart().getCharPositionInLine()));
+				} catch (NullPointerException e) {
+					Logging.error("Unknown type of anonymous function def.");
+				}
+			}
 			Token stop = ctx.getStop();
-			if (ctx.getChildCount()==5)
-			{
-				if (ctx.getChild(0).getText().equals("("))
-				{
-					if (ctx.getChild(1).getChildCount()==1)
-					{
-						if (ctx.getChild(1).getChild(0).getChildCount()>0)
-						{
-						   // we have a function parameter list!
+			if (ctx.getChildCount() == 5) {
+				if (ctx.getChild(0).getText().equals("(")) {
+					if (ctx.getChild(1).getChildCount() == 1) {
+						if (ctx.getChild(1).getChild(0).getChildCount() > 0) {
+							// we have a function parameter list!
 							ParseTree t = ctx.getChild(1).getChild(0);
-						   int childCount = t.getChildCount();
-						   List<Parameter> params = new ArrayList<>();
-						   functionParams.put(currentFunction, params);
-						   for (int i = 0; i<childCount; i+=2)
-						   {
-							   ParseTree nt = t.getChild(i);
-							   params.add(new Parameter(null, nt.getText()));
-							   scopes.peek().put(
-										nt.getText(),
-										Completion.newInstance(CompletionType.VARIABLE, nt
-												.getText(), ctx.getStart().getLine(), ctx
-												.getStart().getCharPositionInLine()));
-						   }
+							int childCount = t.getChildCount();
+							List<Parameter> params = new ArrayList<>();
+							functionParams.put(currentFunction, params);
+							for (int i = 0; i < childCount; i += 2) {
+								ParseTree nt = t.getChild(i);
+								params.add(new Parameter(null, nt.getText()));
+								scopes.peek()
+										.put(nt.getText(),
+												Completion
+														.newInstance(
+																CompletionType.VARIABLE,
+																nt.getText(),
+																ctx.getStart()
+																		.getLine(),
+																ctx.getStart()
+																		.getCharPositionInLine()));
+							}
 						}
 					}
 				}
 			}
+			currentFunction = null;
 			popScope(stop.getStopIndex());
 		}
 
 		private void pushScope() {
 			scopes.push(new TreeMap<>());
-			// System.out.println("Scope depth now " + scopes.size());
+			Logging.info("Scope depth now " + scopes.size());
 		}
 
-		private void useScope()
-		{
+		private void useScope() {
 			relevantStack = new Stack<>();
 			relevantStack.addAll(scopes);
-			// System.out.println("Bingo: relevant scope id'd " + relevantStack);
+			Logging.info("Relevant scope identified as " + relevantStack);
 			frozen = true;
 		}
-		
+
 		private void popScope(int offset) {
 			// our caret offset lies in this block
 			if (!frozen && offset >= info.getPosition()) {
 				useScope();
 			}
 			// we are about to pop the last scope without having found
-			// the proper one - this should only be the case when 
+			// the proper one - this should only be the case when
 			// the caret pos is beyond the end of the block.
-			if (!frozen && scopes.size()==1 && info.getPosition() != 0)
-			{
+			if (!frozen && scopes.size() == 1 && info.getPosition() != 0) {
 				useScope();
 			}
-			// System.out.println("Scope popped: " + scopes.peek());
+			// Logging.info("Scope popped: " + scopes.peek());
 			scopes.pop();
 		}
 

@@ -25,10 +25,10 @@
  */
 package org.mism.forfife;
 
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.swing.text.JTextComponent;
 
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
@@ -64,11 +64,16 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	protected void initStaticCompletions() {
 		for (String keyWord : LUA_KEY_WORDS) {
-			checkProviderAndAdd(new BasicCompletion(this, keyWord, "LUA keyword."));
+			BasicCompletion keyCompl = new BasicCompletion(this, keyWord,
+					"LUA keyword.");
+			keyCompl.setRelevance(0);
+			checkProviderAndAdd(keyCompl);
 		}
 		for (String[] shortCut : LUA_SHORTCUTS) {
-			checkProviderAndAdd(new ShorthandCompletion(this, shortCut[0],
-					shortCut[1]));
+			ShorthandCompletion scCompl = new ShorthandCompletion(this,
+					shortCut[0], shortCut[1]);
+			scCompl.setRelevance(9000);
+			checkProviderAndAdd(scCompl);
 		}
 	}
 
@@ -81,17 +86,29 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		for (LuaSyntaxAnalyzer.Completion comp : analyzer.getCompletions()) {
 			switch (comp.getType()) {
 			case FUNCTION:
-				FunctionCompletion fc = new FunctionCompletion(this, comp.getText(), "function");
-				List<Parameter> params = analyzer.getFunctionParams(comp.getText());
+				FunctionCompletion fc = new FunctionCompletion(this,
+						comp.getText(), "function");
+				fc.setRelevance(1000);
+				List<Parameter> params = analyzer.getFunctionParams(comp
+						.getText());
 				fc.setParams(params);
 				completions.add(fc);
 				break;
 			case VARIABLE:
-				completions.add(new VariableCompletion(this, comp.getText(), "variable"));
+				VariableCompletion varCompl = new VariableCompletion(this,
+						comp.getText(), "variable");
+				varCompl.setRelevance(4000);
+				completions.add(varCompl);
 
 			}
 		}
 		addCompletions(completions);
+	}
+
+	@Override
+	public List<Completion> getCompletions(JTextComponent comp) {
+		refreshCompletions(comp.getText(), getCaretInfoFor((RSyntaxTextArea)comp));
+		return super.getCompletions(comp);
 	}
 
 	void refreshCompletions(String luaScript, CaretInfo info) {
@@ -107,23 +124,13 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		super.clear();
 		initStaticCompletions();
 		initDynamicCompletions(analyzer);
-    }
-
-	public void listenTo(RSyntaxTextArea textArea) {
-		refreshCompletions(textArea.getText(), getCaretInfoFor(textArea));
-		textArea.addKeyListener(new KeyAdapter() {
-
-			@Override
-			public void keyTyped(KeyEvent e) {
-				String curr = textArea.getText();
-				CaretInfo info = getCaretInfoFor(textArea);
-				refreshCompletions(curr, info);
-			}
-		});
 	}
-	
-	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea)
-	{
-		return CaretInfo.newInstance(textArea.getCaretPosition(), textArea.getCaretLineNumber() + 1, textArea.getCaretOffsetFromLineStart(), textArea.getSelectedText()!=null, textArea.getSelectionStart(), textArea.getSelectionEnd());
+
+	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea) {
+		return CaretInfo.newInstance(textArea.getCaretPosition(),
+				textArea.getCaretLineNumber() + 1,
+				textArea.getCaretOffsetFromLineStart(),
+				textArea.getSelectedText() != null,
+				textArea.getSelectionStart(), textArea.getSelectionEnd());
 	}
 }

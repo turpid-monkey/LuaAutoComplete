@@ -64,6 +64,7 @@ class LuaFoldsVisitor extends LuaBaseVisitor<Void> {
 				folds.add(f);
 			}
 		} catch (BadLocationException e) {
+			Logging.error("Bad code, check implementation.", e);
 			throw new RuntimeException(e);
 		}
 		return super.visitBlock(ctx);
