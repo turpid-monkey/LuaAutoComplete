@@ -5,7 +5,7 @@ A LUA completion provider for RSyntaxTextArea (http://fifesoft.com/rsyntaxtextar
 
 The project source is available under the BSD 2-clause license printed below.
 
-This project is part of an IDE for the UG4 shell created by the Goethe Center of Scientific Computing in Frankfurt.
+This project is part of an IDE for the UG4 shell created by the Goethe Center of Scientific Computing in Frankfurt. The UG4 shell is a powerful tool for solving partial differential equations in two and three space dimensions.
 
 In order to build this project, you need the projects RSyntaxTextArea and AutoComplete in the same directory as this project.
 -> https://github.com/bobbylight/AutoComplete
@@ -13,9 +13,7 @@ In order to build this project, you need the projects RSyntaxTextArea and AutoCo
 
 ----------------------
 
-Run/view org.mism.forfife.test.LuaCompletionTest for a sample usage.
-
-Special thanks go to Michael Hoffer, who supervised the creation of this project.
+Special thanks go to Michael Hoffer, who supervised the creation of this project. Check out his great projects here https://github.com/miho.
 
 ----------------------
 
