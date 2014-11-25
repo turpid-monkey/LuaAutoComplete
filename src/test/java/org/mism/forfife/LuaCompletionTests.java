@@ -7,6 +7,7 @@ package org.mism.forfife;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -19,7 +20,7 @@ import org.mism.forfife.LuaSyntaxAnalyzer.Completion;
  */
 public class LuaCompletionTests {
 
-	static String toString(List<Completion> completions) {
+	static String toString(Collection<Completion> completions) {
 		StringBuffer buf = new StringBuffer();
 		for (Completion c : completions) {
 			buf.append(c.getType().name() + ":" + c.getText() + "; ");
@@ -38,7 +39,7 @@ public class LuaCompletionTests {
 		// var declaration
 		// within the function declaration. But in the final completion list,
 		// only n shows.
-		assertEquals("FUNCTION:foo; FUNCTION:test; VARIABLE:n; VARIABLE:n;",
+		assertEquals("FUNCTION:test; FUNCTION:foo; VARIABLE:n;",
 				toString(an.getCompletions()));
 		assertEquals(1, an.getFunctionParams("foo").size());
 		assertEquals("n", an.getFunctionParams("foo").get(0).getName());
@@ -73,11 +74,7 @@ public class LuaCompletionTests {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
 		an.initCompletions("function paramsTest(a,b,c) return 5 end", c);
-		Iterator<Completion> completions = an.getCompletions().iterator();
-		assertEquals("paramsTest", completions.next().getText());
-		assertEquals("a", completions.next().getText());
-		assertEquals("b", completions.next().getText());
-		assertEquals("c", completions.next().getText());
+		assertEquals("VARIABLE:a; VARIABLE:b; VARIABLE:c; FUNCTION:paramsTest;", toString(an.getCompletions()));
 		assertEquals(3, an.getFunctionParams("paramsTest").size());
 	}
 
@@ -97,5 +94,19 @@ public class LuaCompletionTests {
 		an.initCompletions("foo = function (n)\nreturn n*2\nend", c);
 		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
 		assertEquals(1, an.getFunctionParams("foo").size());
+	}
+	
+	@Test
+	public void testDuplicateVarCompletions()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(40);
+		an.initCompletions("function test(arm, be, crushed)\n"
+				+ "fun = 5\n"
+				//+ "crushed = 2\n"
+				+ "return arm * arm + crushed\n"
+				+ "end", c);
+		assertEquals("VARIABLE:be; FUNCTION:test; VARIABLE:arm; VARIABLE:crushed; VARIABLE:fun;", toString(an.getCompletions()));
+		assertEquals(3, an.getFunctionParams("test").size());
 	}
 }
