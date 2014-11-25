@@ -4,3 +4,5 @@
 /LuaListener.java
 /LuaParser.java
 /LuaVisitor.java
+/Lua.tokens
+/LuaLexer.tokens
