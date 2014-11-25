@@ -8,8 +8,6 @@ package org.mism.forfife;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 
 import org.junit.Test;
 import org.mism.forfife.LuaSyntaxAnalyzer.Completion;
@@ -108,5 +106,13 @@ public class LuaCompletionTests {
 				+ "end", c);
 		assertEquals("VARIABLE:be; FUNCTION:test; VARIABLE:arm; VARIABLE:crushed; VARIABLE:fun;", toString(an.getCompletions()));
 		assertEquals(3, an.getFunctionParams("test").size());
+	}
+	
+	@Test
+	public void testVarsInForLoop(){
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.HOME;
+		an.initCompletions("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
+		assertEquals("VARIABLE:q;VARIABLE:i;", toString(an.getCompletions()));
 	}
 }
