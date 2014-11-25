@@ -48,6 +48,7 @@ import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
 import org.mism.forfife.lua.LuaParser.FuncbodyContext;
+import org.mism.forfife.lua.LuaParser.StatContext;
 
 /**
  *
@@ -106,10 +107,9 @@ public class LuaSyntaxAnalyzer {
 	public Collection<Completion> getCompletions() {
 		Map<String, Completion> map = new HashMap<>();
 		for (Map<String, Completion> scope : relevantStack) {
-			for (Completion c: scope.values())
-			{
+			for (Completion c : scope.values()) {
 				if (!map.containsKey((c.getText())))
-						map.put(c.getText(), c);
+					map.put(c.getText(), c);
 			}
 		}
 		return map.values();
@@ -187,6 +187,24 @@ public class LuaSyntaxAnalyzer {
 		}
 
 		@Override
+		public void exitStat(StatContext ctx) {
+			if (ctx.getStart().getText().equals("for")) {
+				ParseTree t = ctx.getChild(1);
+				if (t.getChildCount() == 0) // single var decl
+				{
+					scopes.peek().put(
+							ctx.getChild(1).getText(),
+							Completion.newInstance(CompletionType.VARIABLE, t
+									.getText(), ctx.getStart().getLine(), ctx
+									.getStart().getCharPositionInLine()));
+				} else {
+					// for x,y,z in 5 do ... ignored for now //
+				}
+			}
+			super.enterStat(ctx);
+		}
+
+		@Override
 		public void exitFuncbody(FuncbodyContext ctx) {
 			if (currentFunction == null) {
 				// anonymous function
@@ -194,9 +212,10 @@ public class LuaSyntaxAnalyzer {
 					Token varName = ctx.getParent().getParent().getParent()
 							.getParent().getStart();
 					currentFunction = varName.getText();
-					Logging.info("Anonymous function hit. Redefining var '" + currentFunction + "' to a function.");
+					Logging.info("Anonymous function hit. Redefining var '"
+							+ currentFunction + "' to a function.");
 					// var declaration in parent scope needs to be replaced.
-					scopes.get(scopes.size()-2).put(
+					scopes.get(scopes.size() - 2).put(
 							currentFunction,
 							Completion.newInstance(CompletionType.FUNCTION,
 									currentFunction, ctx.getStart().getLine(),

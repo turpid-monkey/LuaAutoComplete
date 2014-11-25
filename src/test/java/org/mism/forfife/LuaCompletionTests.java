@@ -113,6 +113,6 @@ public class LuaCompletionTests {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
 		an.initCompletions("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
-		assertEquals("VARIABLE:q;VARIABLE:i;", toString(an.getCompletions()));
+		assertEquals("VARIABLE:q; VARIABLE:i;", toString(an.getCompletions()));
 	}
 }
