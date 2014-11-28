@@ -70,7 +70,7 @@ uploadArchives {
 				project {
 					
 					groupId 'org.mism.forfife'
-					artifactId 'luautocomplete'
+					artifactId 'luaautocomplete'
 					packaging 'jar'
 					version '0.0.1'
 					
