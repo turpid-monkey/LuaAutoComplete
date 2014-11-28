@@ -4,6 +4,8 @@ apply plugin: 'com.github.jacobono.jaxb'
 apply plugin: 'git-dependencies'
 apply plugin: 'maven'
 
+version = 0.1
+
 jar.dependsOn compileJava
 compileJava.dependsOn antlr4 
 
@@ -72,7 +74,7 @@ uploadArchives {
 					groupId 'org.mism.forfife'
 					artifactId 'luaautocomplete'
 					packaging 'jar'
-					version '0.0.1'
+					version '0.1'
 					
 					name 'LuaAutoComplete'
 					description 'LuaAutoComplete is a context-sensitive completion provider implementation for RSyntaxTextArea.'
