@@ -2,6 +2,7 @@ apply plugin: 'java'
 apply plugin: 'me.champeau.gradle.antlr4'
 apply plugin: 'com.github.jacobono.jaxb'
 apply plugin: 'git-dependencies'
+apply plugin: 'maven'
 
 jar.dependsOn compileJava
 compileJava.dependsOn antlr4 
@@ -58,7 +59,41 @@ buildscript {
         classpath 'org.batcha.gradle.plugins:git-dependencies:0.2'
     }
 }
+uploadArchives {
+	repositories {
+		mavenDeployer {
+			repository(url: 'file:///' + projectDir + '/../localMavenRepo')
+			beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+			pom {
+				groupId = 'org.mism.forfife'
+				name = 'luaautocomplete'
+				project {
+					
+					groupId 'org.mism.forfife'
+					artifactId 'luautocomplete'
+					packaging 'jar'
+					version '0.0.1'
+					
+					name 'LuaAutoComplete'
+					description 'LuaAutoComplete is a context-sensitive completion provider implementation for RSyntaxTextArea.'
+					
+					inceptionYear '2014'
+					url 'http://https://github.com/turpid-monkey/LuaAutoComplete'
 
+					// Manually add runtime dependencies since we don't have
+					// a multi-project build set up properly
+					dependencies {
+						dependency {
+							groupId 'com.fifesoft'
+							artifactId 'autocomplete'
+							version '2.5.4'
+						}
+					}
+				}
+			}
+		}
+	}
+}
 dependencies {
     // TODO: Add dependencies here ...
     // You can read more about how to add dependency here:
