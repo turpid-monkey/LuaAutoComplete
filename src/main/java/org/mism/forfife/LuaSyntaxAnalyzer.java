@@ -29,16 +29,15 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -65,6 +64,11 @@ public class LuaSyntaxAnalyzer {
 		String text;
 		int line;
 		int pos;
+		boolean local;
+
+		public boolean isLocal() {
+			return local;
+		}
 
 		public int getLine() {
 			return line;
@@ -84,12 +88,32 @@ public class LuaSyntaxAnalyzer {
 
 		static Completion newInstance(CompletionType type, String text,
 				int line, int pos) {
+			return newInstance(type, text, line, pos, false);
+		}
+
+		static Completion newInstance(CompletionType type, String text,
+				int line, int pos, boolean local) {
 			Completion c = new Completion();
 			c.type = type;
 			c.text = text;
 			c.line = line;
 			c.pos = pos;
+			c.local = local;
 			return c;
+		}
+
+		@Deprecated
+		static Completion newVariableInstance(String text, int line, int pos) {
+			return newVariableInstance(text, line, pos, false);
+		}
+
+		static Completion newVariableInstance(String text, int line, int pos,
+				boolean local) {
+			return newInstance(CompletionType.VARIABLE, text, line, pos, local);
+		}
+
+		static Completion newFunctionInstance(String text, int line, int pos) {
+			return newInstance(CompletionType.FUNCTION, text, line, pos);
 		}
 
 		public String toString() {
@@ -136,7 +160,8 @@ public class LuaSyntaxAnalyzer {
 			context = parser.chunk();
 			return true;
 		} catch (RecognitionException e) {
-			Logging.info("Parser unhappy, this is ok: " + e.getMessage());
+			Logging.info("Parser unhappy with current script, no changes to completions. This is ok."
+					+ e.getMessage());
 			return false;
 		} catch (Exception e) {
 			Logging.error(
@@ -145,12 +170,55 @@ public class LuaSyntaxAnalyzer {
 		}
 	}
 
+	static <T extends ParserRuleContext> T getParentRuleContext(
+			ParserRuleContext inner, final int ruleIdx, final Class<T> t) {
+		while ((inner = inner.getParent()).getRuleIndex() != ruleIdx) {
+			if (inner.getRuleIndex() == LuaParser.RULE_chunk)
+				throw new IllegalArgumentException("Reached top of AST, no parent context of type "
+						+ t.getName() + " found. Coding error.");
+		}
+		return t.cast(inner);
+	}
+
+	static StatContext getParentStatContext(final ParserRuleContext inner) {
+		return getParentRuleContext(inner, LuaParser.RULE_stat,
+				StatContext.class);
+	}
+	
+	static String start(ParserRuleContext ctx)
+	{
+		return ctx.getStart().getText();
+	}
+	
+	static String next(ParserRuleContext ctx)
+	{
+		return ctx.getChild(1).getText();
+	}
+	
+	static int line(ParserRuleContext ctx)
+	{
+		return ctx.getStart().getLine();
+	}
+	
+	static int pos(ParserRuleContext ctx)
+	{
+		return ctx.getStart().getCharPositionInLine();
+	}
+	
+	static String txt(ParserRuleContext ctx)
+	{
+		return ctx.getText();
+	}
+
 	private class LuaListener extends LuaBaseListener {
 
+		private static final String LEFT_BRACKET = "(";
+		private static final String FUNCTION = "function";
+		private static final String LOCAL = "local";
+		private static final String FOR = "for";
 		CaretInfo info;
 		boolean frozen = false;
 		Stack<Map<String, Completion>> scopes = new Stack<>();
-		String currentFunction;
 
 		LuaListener(CaretInfo info) {
 			this.info = info;
@@ -158,22 +226,20 @@ public class LuaSyntaxAnalyzer {
 
 		@Override
 		public void exitVar(LuaParser.VarContext ctx) {
-			String varName = ctx.getText();
+			String varName = start(ctx);
+			LuaParser.StatContext statCtx = getParentStatContext(ctx);
+			boolean local = start(statCtx).equals(LOCAL);
 			scopes.peek().put(
 					varName,
-					Completion.newInstance(CompletionType.VARIABLE, ctx
-							.getText(), ctx.getStart().getLine(), ctx
-							.getStart().getCharPositionInLine()));
+					Completion.newVariableInstance(varName, line(ctx), pos(ctx), local));
 		}
 
 		@Override
 		public void exitFuncname(LuaParser.FuncnameContext ctx) {
-			currentFunction = ctx.getText();
+			String funcName = txt(ctx);
 			scopes.peek().put(
-					ctx.getText(),
-					Completion.newInstance(CompletionType.FUNCTION, ctx
-							.getText(), ctx.getStart().getLine(), ctx
-							.getStart().getCharPositionInLine()));
+					funcName,
+					Completion.newFunctionInstance(funcName, line(ctx), pos(ctx)));
 		}
 
 		@Override
@@ -188,45 +254,69 @@ public class LuaSyntaxAnalyzer {
 
 		@Override
 		public void exitStat(StatContext ctx) {
-			if (ctx.getStart().getText().equals("for")) {
+			String startText = start(ctx);
+
+			switch (startText) {
+			case FOR:
 				ParseTree t = ctx.getChild(1);
 				if (t.getChildCount() == 0) // single var decl
 				{
 					scopes.peek().put(
-							ctx.getChild(1).getText(),
-							Completion.newInstance(CompletionType.VARIABLE, t
-									.getText(), ctx.getStart().getLine(), ctx
-									.getStart().getCharPositionInLine()));
+							next(ctx),
+							Completion.newVariableInstance(next(ctx), line(ctx), pos(ctx), true));
 				} else {
-					// for x,y,z in 5 do ... ignored for now //
+					// for x,y,z in {a,bc} do ... ignored for now //
+					Logging.debug("for x,y,z in exp not supported yet");
 				}
+
+				break;
+			case LOCAL:
+				if (ctx.getChild(1).getText().equals(FUNCTION)) {
+					String localFunction = ctx.getChild(2).getText();
+					scopes.peek().put(
+							localFunction,
+							Completion.newFunctionInstance(localFunction, line(ctx), pos(ctx)));
+				}
+
+				break;
 			}
-			super.enterStat(ctx);
 		}
 
 		@Override
 		public void exitFuncbody(FuncbodyContext ctx) {
-			if (currentFunction == null) {
+			StatContext statCtx = getParentStatContext(ctx);
+			String startText = statCtx.getStart().getText();
+			String currentFunction;
+			boolean anonFunction = false;
+			switch (startText) {
+			case FUNCTION:
+				currentFunction = next(statCtx);
+				break;
+			case LOCAL:
+				currentFunction = statCtx.getChild(2).getText();
+				break;
+			default:
+				currentFunction = startText;
+				anonFunction = true;
+			}
+
+			if (anonFunction) {
 				// anonymous function
 				try {
-					Token varName = ctx.getParent().getParent().getParent()
-							.getParent().getStart();
-					currentFunction = varName.getText();
 					Logging.info("Anonymous function hit. Redefining var '"
 							+ currentFunction + "' to a function.");
 					// var declaration in parent scope needs to be replaced.
 					scopes.get(scopes.size() - 2).put(
 							currentFunction,
-							Completion.newInstance(CompletionType.FUNCTION,
-									currentFunction, ctx.getStart().getLine(),
-									ctx.getStart().getCharPositionInLine()));
+							Completion.newFunctionInstance(currentFunction, line(ctx), pos(ctx)));
 				} catch (NullPointerException e) {
-					Logging.error("Unknown type of anonymous function def.");
+					Logging.error("Unknown type of anonymous function def, or some completely different construct.");
 				}
 			}
+			// dig for Function Params
 			Token stop = ctx.getStop();
 			if (ctx.getChildCount() == 5) {
-				if (ctx.getChild(0).getText().equals("(")) {
+				if (ctx.getChild(0).getText().equals(LEFT_BRACKET)) {
 					if (ctx.getChild(1).getChildCount() == 1) {
 						if (ctx.getChild(1).getChild(0).getChildCount() > 0) {
 							// we have a function parameter list!
@@ -239,20 +329,16 @@ public class LuaSyntaxAnalyzer {
 								params.add(new Parameter(null, nt.getText()));
 								scopes.peek()
 										.put(nt.getText(),
-												Completion
-														.newInstance(
-																CompletionType.VARIABLE,
-																nt.getText(),
-																ctx.getStart()
-																		.getLine(),
-																ctx.getStart()
-																		.getCharPositionInLine()));
+												Completion.newVariableInstance(
+														nt.getText(),
+														line(ctx),
+														pos(ctx),
+														true));
 							}
 						}
 					}
 				}
 			}
-			currentFunction = null;
 			popScope(stop.getStopIndex());
 		}
 

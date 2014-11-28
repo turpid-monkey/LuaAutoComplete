@@ -7,7 +7,11 @@ package org.mism.forfife;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import org.junit.Test;
 import org.mism.forfife.LuaSyntaxAnalyzer.Completion;
@@ -20,14 +24,23 @@ public class LuaCompletionTests {
 
 	static String toString(Collection<Completion> completions) {
 		StringBuffer buf = new StringBuffer();
-		for (Completion c : completions) {
-			buf.append(c.getType().name() + ":" + c.getText() + "; ");
+		List<Completion> cl;
+		Collections.sort(cl = new ArrayList<Completion>(completions), new Comparator<Completion>(
+				) {
+
+					@Override
+					public int compare(Completion o1, Completion o2) {
+						return o1.getType().name().concat(o1.getText()).compareTo(o2.getType().name().concat(o2.getText()));
+					}
+		});
+		for (Completion c : cl) {
+			buf.append((c.isLocal()?"local ":"") + c.getType().name() + ":" + c.getText() + "; ");
 		}
 		return buf.toString().trim();
 	}
 
 	@Test
-	public void testLuaSyntaxAnalyzer() {
+	public void testInlineFunctionDeclAssign() {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
 		an.initCompletions(
@@ -37,7 +50,7 @@ public class LuaCompletionTests {
 		// var declaration
 		// within the function declaration. But in the final completion list,
 		// only n shows.
-		assertEquals("FUNCTION:test; FUNCTION:foo; VARIABLE:n;",
+		assertEquals("FUNCTION:foo; FUNCTION:test; local VARIABLE:n;",
 				toString(an.getCompletions()));
 		assertEquals(1, an.getFunctionParams("foo").size());
 		assertEquals("n", an.getFunctionParams("foo").get(0).getName());
@@ -72,7 +85,7 @@ public class LuaCompletionTests {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
 		an.initCompletions("function paramsTest(a,b,c) return 5 end", c);
-		assertEquals("VARIABLE:a; VARIABLE:b; VARIABLE:c; FUNCTION:paramsTest;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:paramsTest; local VARIABLE:a; local VARIABLE:b; local VARIABLE:c;", toString(an.getCompletions()));
 		assertEquals(3, an.getFunctionParams("paramsTest").size());
 	}
 
@@ -104,7 +117,7 @@ public class LuaCompletionTests {
 				//+ "crushed = 2\n"
 				+ "return arm * arm + crushed\n"
 				+ "end", c);
-		assertEquals("VARIABLE:be; FUNCTION:test; VARIABLE:arm; VARIABLE:crushed; VARIABLE:fun;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:test; local VARIABLE:arm; local VARIABLE:be; local VARIABLE:crushed; VARIABLE:fun;", toString(an.getCompletions()));
 		assertEquals(3, an.getFunctionParams("test").size());
 	}
 	
@@ -113,6 +126,53 @@ public class LuaCompletionTests {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
 		an.initCompletions("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
-		assertEquals("VARIABLE:q; VARIABLE:i;", toString(an.getCompletions()));
+		assertEquals("local VARIABLE:i; VARIABLE:q;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testLocalVarsAndFuncs1()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.HOME;
+		an.initCompletions("someVar=5\n"
+				+ "function localDanger()\n"
+				+ "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n"
+				+ "   local q = superLoco(5)\n"
+				+ "   return q\n"
+				+ "end\n", c);
+		assertEquals("FUNCTION:localDanger; VARIABLE:someVar;", toString(an.getCompletions()));
+	}
+	@Test
+	public void testLocalVarsAndFuncs2()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(23);
+		an.initCompletions("someVar=5\n"
+				+ "function localDanger()\n"
+				+ "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n"
+				+ "   local q = superLoco(5)\n"
+				+ "   return q\n"
+				+ "end\n", c);
+		assertEquals("FUNCTION:localDanger; FUNCTION:superLoco; VARIABLE q; VARIABLE:someVar;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testLocalVarsAndFuncs3()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(42);
+		an.initCompletions("someVar=5\n"
+				+ "function localDanger()\n"
+				+ "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n"
+				+ "   local q = superLoco(5)\n"
+				+ "   return q\n"
+				+ "end\n", c);
+		assertEquals("FUNCTION:localDanger; FUNCTION:superLoco; VARIABLE q; VARIABLE:someVar; VARIABLE x;", toString(an.getCompletions()));
 	}
 }
