@@ -1,6 +1,1 @@
-
 rootProject.name = 'LuaAutoComplete'
-
-include "AutoComplete", "RSyntaxTextArea"
-project(':AutoComplete').projectDir = new File(settingsDir, '../AutoComplete')
-project(':RSyntaxTextArea').projectDir = new File(settingsDir, '../RSyntaxTextArea')
