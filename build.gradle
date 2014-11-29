@@ -4,6 +4,7 @@ apply plugin: 'com.github.jacobono.jaxb'
 apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
+apply plugin: 'eclipse'
 
 version = '0.1'
 group = 'org.mism.forfife'
@@ -80,6 +81,9 @@ dependencies {
     compile (group: 'org.antlr', name: 'antlr4', version: '4.2')
     compile (group: 'org.antlr', name: 'antlr4', version: '4.2', classifier: 'sources')
 
-    compile('com.fifesoft:rsyntaxtextarea:2.5.4')
-    compile('com.fifesoft:autocomplete:2.5.4')
+    compile (group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '2.5.4')
+    compile (group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '2.5.4', classifier: 'sources')
+    
+    compile (group: 'com.fifesoft', name : 'autocomplete', version: '2.5.4')
+    compile (group: 'com.fifesoft', name : 'autocomplete', version: '2.5.4', classifier: 'sources')
 }
