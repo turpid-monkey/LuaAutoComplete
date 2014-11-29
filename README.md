@@ -1,6 +1,7 @@
 LuaCompletionProvider
 =====================
-
+[![Build Status](https://travis-ci.org/turpid-monkey/LuaAutoComplete.svg?branch=master)](https://travis-ci.org/turpid-monkey/LuaAutoComplete/) [![Coverage Status](https://img.shields.io/coveralls/turpid-monkey/LuaAutoComplete.svg)](https://coveralls.io/r/turpid-monkey/LuaAutoComplete)
+=====================
 A LUA completion provider for RSyntaxTextArea (http://fifesoft.com/rsyntaxtextarea/)
 
 The project source is available under the BSD 2-clause license printed below.
@@ -17,11 +18,6 @@ Special thanks go to Michael Hoffer, who supervised the creation of this project
 
 ----------------------
 
-[![Coverage Status](https://img.shields.io/coveralls/turpid-monkey/LuaAutoComplete.svg)](https://coveralls.io/r/turpid-monkey/LuaAutoComplete)
-
-Integrated with Travis CI: https://travis-ci.org/turpid-monkey/LuaAutoComplete
-
-----------------------
 License
 
 Copyright (c) 2014, Goethe University, Goethe Center for Scientific Computing (GCSC), gcsc.uni-frankfurt.de
