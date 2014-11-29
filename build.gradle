@@ -61,6 +61,7 @@ buildscript {
         classpath 'org.batcha.gradle.plugins:git-dependencies:0.2'
     }
 }
+
 uploadArchives {
 	repositories {
 		mavenDeployer {
@@ -80,7 +81,7 @@ uploadArchives {
 					description 'LuaAutoComplete is a context-sensitive completion provider implementation for RSyntaxTextArea.'
 					
 					inceptionYear '2014'
-					url 'http://https://github.com/turpid-monkey/LuaAutoComplete'
+					url 'https://github.com/turpid-monkey/LuaAutoComplete'
 
 					// Manually add runtime dependencies since we don't have
 					// a multi-project build set up properly
@@ -90,6 +91,11 @@ uploadArchives {
 							artifactId 'autocomplete'
 							version '2.5.4'
 						}
+						dependency {
+							groupId 'com.fifesoft'
+							artifactId 'rsyntaxtextarea'
+							version '2.5.4'
+						}
 					}
 				}
 			}
@@ -97,16 +103,12 @@ uploadArchives {
 	}
 }
 dependencies {
-    // TODO: Add dependencies here ...
-    // You can read more about how to add dependency here:
-    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
+    
     testCompile group: 'junit', name: 'junit', version: '4.10'
     
     compile (group: 'org.antlr', name: 'antlr4', version: '4.2')
     compile (group: 'org.antlr', name: 'antlr4', version: '4.2', classifier: 'sources')
 
-    compile 'me.champeau.gradle:antlr4-gradle-plugin:0.1'
-    
     compile('com.fifesoft:rsyntaxtextarea:2.5.4').ext.git = 'https://github.com/bobbylight/RSyntaxTextArea.git'
     compile('com.fifesoft:autocomplete:2.5.4').ext.git = 'https://github.com/bobbylight/AutoComplete.git'
 }
