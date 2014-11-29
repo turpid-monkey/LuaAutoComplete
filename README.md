@@ -17,6 +17,11 @@ Special thanks go to Michael Hoffer, who supervised the creation of this project
 
 ----------------------
 
+[![Coverage Status](https://img.shields.io/coveralls/turpid-monkey/LuaAutoComplete.svg)](https://coveralls.io/r/turpid-monkey/LuaAutoComplete)
+
+Integrated with Travis CI: https://travis-ci.org/turpid-monkey/LuaAutoComplete
+
+----------------------
 License
 
 Copyright (c) 2014, Goethe University, Goethe Center for Scientific Computing (GCSC), gcsc.uni-frankfurt.de
