@@ -5,7 +5,7 @@ apply plugin: 'maven'
 apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
 
-version = 0.1
+version = '0.1'
 group = 'org.mism.forfife'
 
 jar.dependsOn compileJava
