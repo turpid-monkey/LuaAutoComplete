@@ -9,7 +9,7 @@ script:
   - ./gradlew build
 
 after_success:
-  - ./gradlew cobertura coveralls
+  - ./gradlew jacocoTestReport coveralls
 
 after_failure:
   - "cat ./build/test-results/*.xml"
