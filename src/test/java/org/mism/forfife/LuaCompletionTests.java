@@ -142,7 +142,7 @@ public class LuaCompletionTests {
 				+ "   local q = superLoco(5)\n"
 				+ "   return q\n"
 				+ "end\n", c);
-		//assertEquals("FUNCTION:localDanger; VARIABLE:someVar;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:localDanger; VARIABLE:someVar;", toString(an.getCompletions()));
 	}
 	@Test
 	public void testLocalVarsAndFuncs2()
@@ -157,7 +157,7 @@ public class LuaCompletionTests {
 				+ "   local q = superLoco(5)\n"
 				+ "   return q\n"
 				+ "end\n", c);
-		//assertEquals("FUNCTION:localDanger; FUNCTION:superLoco; VARIABLE q; VARIABLE:someVar;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:localDanger; FUNCTION:superLoco; VARIABLE q; VARIABLE:someVar;", toString(an.getCompletions()));
 	}
 	
 	@Test
@@ -173,6 +173,6 @@ public class LuaCompletionTests {
 				+ "   local q = superLoco(5)\n"
 				+ "   return q\n"
 				+ "end\n", c);
-		//assertEquals("FUNCTION:localDanger; FUNCTION:superLoco; VARIABLE q; VARIABLE:someVar; VARIABLE x;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:localDanger; FUNCTION:superLoco; VARIABLE q; VARIABLE:someVar; VARIABLE x;", toString(an.getCompletions()));
 	}
 }
