@@ -83,7 +83,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	protected void initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
 		List<Completion> completions = new ArrayList<>();
-		for (LuaSyntaxAnalyzer.Completion comp : analyzer.getCompletions()) {
+		for (CompletionInfo comp : analyzer.getCompletions()) {
 			switch (comp.getType()) {
 			case FUNCTION:
 				FunctionCompletion fc = new FunctionCompletion(this,

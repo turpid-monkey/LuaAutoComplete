@@ -25,42 +25,61 @@
  */
 package org.mism.forfife;
 
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Lexer;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.folding.Fold;
-import org.fife.ui.rsyntaxtextarea.folding.FoldParser;
-import org.mism.forfife.lua.LuaLexer;
-import org.mism.forfife.lua.LuaParser;
-/**
- * Register this class with org.fife.ui.rsyntaxtextarea.folding.FoldParserManager.get() singleton instance.
- * 
- * @author tr1nergy
- *
- */
-public class LuaFoldParser implements FoldParser {
+class CompletionInfo {
+	CompletionType type;
+	String text;
+	int line;
+	int pos;
+	boolean local;
 
-	@Override
-	public List<Fold> getFolds(RSyntaxTextArea textArea) {
-		try {
-			
-			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
-					textArea.getText()));
-			Lexer lx = new LuaLexer(str);
-			CommonTokenStream tokStr = new CommonTokenStream(lx);
-			LuaParser parser = new LuaParser(tokStr);
-			LuaFoldsVisitor lfv = new LuaFoldsVisitor(textArea);
-			lfv.visit(parser.chunk());
-			Logging.debug("Found " + lfv.getFolds().size() + " folds.");
-			return lfv.getFolds();
-		} catch (Exception e) {
-			Logging.error("No folds found due to exception", e);
-			return new ArrayList<Fold>();
-		}
+	public boolean isLocal() {
+		return local;
+	}
+
+	public int getLine() {
+		return line;
+	}
+
+	public int getPos() {
+		return pos;
+	}
+
+	public String getText() {
+		return text;
+	}
+
+	public CompletionType getType() {
+		return type;
+	}
+
+	static CompletionInfo newInstance(CompletionType type, String text,
+			int line, int pos) {
+		return newInstance(type, text, line, pos, false);
+	}
+
+	static CompletionInfo newInstance(CompletionType type, String text,
+			int line, int pos, boolean local) {
+		CompletionInfo c = new CompletionInfo();
+		c.type = type;
+		c.text = text;
+		c.line = line;
+		c.pos = pos;
+		c.local = local;
+		return c;
+	}
+
+	static CompletionInfo newVariableInstance(String text, int line, int pos,
+			boolean local) {
+		return newInstance(CompletionType.VARIABLE, text, line, pos, local);
+	}
+	
+	static CompletionInfo newFunctionInstance(String txt, int line, int pos, boolean local)
+	{
+		return newInstance(CompletionType.FUNCTION, txt, line, pos, local);
+	}
+
+	public String toString() {
+		return getType().name() + ":" + getText();
 	}
 }

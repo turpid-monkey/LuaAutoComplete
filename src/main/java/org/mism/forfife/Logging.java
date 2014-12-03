@@ -34,7 +34,7 @@ import java.util.List;
  * @author tr1nergy
  *
  */
-public final class Logging {
+final class Logging {
 
 	private static final class DefaultLogger implements Logger {
 

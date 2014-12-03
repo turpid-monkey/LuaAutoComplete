@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.mism.forfife;
 
 import static org.junit.Assert.assertEquals;
@@ -14,7 +9,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
-import org.mism.forfife.LuaSyntaxAnalyzer.Completion;
 
 /**
  *
@@ -22,18 +16,18 @@ import org.mism.forfife.LuaSyntaxAnalyzer.Completion;
  */
 public class LuaCompletionTests {
 
-	static String toString(Collection<Completion> completions) {
+	static String toString(Collection<CompletionInfo> completions) {
 		StringBuffer buf = new StringBuffer();
-		List<Completion> cl;
-		Collections.sort(cl = new ArrayList<Completion>(completions), new Comparator<Completion>(
+		List<CompletionInfo> cl;
+		Collections.sort(cl = new ArrayList<CompletionInfo>(completions), new Comparator<CompletionInfo>(
 				) {
 
 					@Override
-					public int compare(Completion o1, Completion o2) {
+					public int compare(CompletionInfo o1, CompletionInfo o2) {
 						return o1.getType().name().concat(o1.getText()).compareTo(o2.getType().name().concat(o2.getText()));
 					}
 		});
-		for (Completion c : cl) {
+		for (CompletionInfo c : cl) {
 			buf.append((c.isLocal()?"local ":"") + c.getType().name() + ":" + c.getText() + "; ");
 		}
 		return buf.toString().trim();
@@ -60,24 +54,34 @@ public class LuaCompletionTests {
 	public void testLuaScoping_SimpleSeparateScopes1() {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions("do i=5 end\ndo q=5 end\n", c);
-		assertEquals("VARIABLE:i;", toString(an.getCompletions()));
+		an.initCompletions("do local i=5 end\ndo local q=5 end\n", c);
+		assertEquals("local VARIABLE:i;", toString(an.getCompletions()));
 	}
 
 	@Test
 	public void testLuaScoping_SimpleSeparateScopes2() {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.newInstance(13);
-		an.initCompletions("do i=5 end\ndo q=5 end\n", c);
-		assertEquals("VARIABLE:q;", toString(an.getCompletions()));
+		an.initCompletions("do local i=5 end\ndo local q=5 end\n", c);
+		assertEquals("local VARIABLE:q;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testLuaScoping_NameLists()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(13);
+		an.initCompletions("a,b = 5\n"
+				+ "do local x, z=5 end\ndo local q=5 end\n", c);
+		assertEquals("VARIABLE:a; VARIABLE:b; local VARIABLE:x; local VARIABLE:z;", toString(an.getCompletions()));
 	}
 
 	@Test
 	public void testLuaScoping_StackedSeparateScopes() {
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.newInstance(10);
-		an.initCompletions("b=10\ndo i=5 end\ndo q=5 end\n", c);
-		assertEquals("VARIABLE:b; VARIABLE:i;", toString(an.getCompletions()));
+		an.initCompletions("b=10\ndo local i=5 end\ndo local q=5 end\n", c);
+		assertEquals("VARIABLE:b; local VARIABLE:i;", toString(an.getCompletions()));
 	}
 
 	@Test
@@ -114,7 +118,6 @@ public class LuaCompletionTests {
 		CaretInfo c = CaretInfo.newInstance(40);
 		an.initCompletions("function test(arm, be, crushed)\n"
 				+ "fun = 5\n"
-				//+ "crushed = 2\n"
 				+ "return arm * arm + crushed\n"
 				+ "end", c);
 		assertEquals("FUNCTION:test; local VARIABLE:arm; local VARIABLE:be; local VARIABLE:crushed; VARIABLE:fun;", toString(an.getCompletions()));
@@ -130,10 +133,11 @@ public class LuaCompletionTests {
 	}
 	
 	@Test
-	public void testLocalVarsAndFuncs1()
+	public void testLocalVarsAndFuncsFirstAndDeepestStack1()
 	{
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
 		CaretInfo c = CaretInfo.HOME;
+		// currently, if the caret position is within the first and deepest stack, all completions in this stack are offered
 		an.initCompletions("someVar=5\n"
 				+ "function localDanger()\n"
 				+ "   local function superLoco(x)\n"
@@ -142,29 +146,14 @@ public class LuaCompletionTests {
 				+ "   local q = superLoco(5)\n"
 				+ "   return q\n"
 				+ "end\n", c);
-		//assertEquals("FUNCTION:localDanger; VARIABLE:someVar;", toString(an.getCompletions()));
-	}
-	@Test
-	public void testLocalVarsAndFuncs2()
-	{
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-		CaretInfo c = CaretInfo.newInstance(23);
-		an.initCompletions("someVar=5\n"
-				+ "function localDanger()\n"
-				+ "   local function superLoco(x)\n"
-				+ "         return x+1\n"
-				+ "   end\n"
-				+ "   local q = superLoco(5)\n"
-				+ "   return q\n"
-				+ "end\n", c);
-		//assertEquals("FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE q; VARIABLE:someVar;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE:q; VARIABLE:someVar; local VARIABLE:x;", toString(an.getCompletions()));
 	}
 	
 	@Test
-	public void testLocalVarsAndFuncs3()
+	public void testLocalVarsAndFuncsFirstAndDeepestStack2()
 	{
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-		CaretInfo c = CaretInfo.newInstance(42);
+		CaretInfo c = CaretInfo.newInstance(40);
 		an.initCompletions("someVar=5\n"
 				+ "function localDanger()\n"
 				+ "   local function superLoco(x)\n"
@@ -173,6 +162,64 @@ public class LuaCompletionTests {
 				+ "   local q = superLoco(5)\n"
 				+ "   return q\n"
 				+ "end\n", c);
-		//assertEquals("FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE q; VARIABLE:someVar; local VARIABLE x;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE:q; VARIABLE:someVar; local VARIABLE:x;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testLocalFunction()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(20);
+		an.initCompletions(
+			      "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n", c);
+		assertEquals("local FUNCTION:superLoco; local VARIABLE:x;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testNestedLocalFunction()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(20);
+		an.initCompletions(
+			      "function top()\n"
+			    + "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n"
+				+ "end\n", c);
+		assertEquals("local FUNCTION:superLoco; FUNCTION:top; local VARIABLE:x;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testLocalVarsAndFuncsNestedStack()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(100);
+		an.initCompletions("someVar=5\n"
+				+ "function localDanger()\n"
+				+ "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n"
+				+ "   local q = superLoco(5)\n"
+				+ "   return q\n"
+				+ "end\n", c);
+		assertEquals("FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE:q; VARIABLE:someVar;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testLocalVarsAndFuncsGlobalStack()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(130);
+		an.initCompletions("someVar=5\n"
+				+ "function localDanger()\n"
+				+ "   local function superLoco(x)\n"
+				+ "         return x+1\n"
+				+ "   end\n"
+				+ "   local q = superLoco(5)\n"
+				+ "   return q\n"
+				+ "end\n", c);
+		assertEquals("FUNCTION:localDanger; VARIABLE:someVar;", toString(an.getCompletions()));
 	}
 }

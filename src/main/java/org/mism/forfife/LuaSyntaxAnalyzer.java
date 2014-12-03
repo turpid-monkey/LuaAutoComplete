@@ -47,91 +47,30 @@ import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
 import org.mism.forfife.lua.LuaParser.FuncbodyContext;
+import org.mism.forfife.lua.LuaParser.NamelistContext;
+import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 
 /**
  *
  * @author tr1nergy
  */
-public class LuaSyntaxAnalyzer {
-
-	public static enum CompletionType {
-		FUNCTION, VARIABLE
-	};
-
-	public static class Completion {
-		CompletionType type;
-		String text;
-		int line;
-		int pos;
-		boolean local;
-
-		public boolean isLocal() {
-			return local;
-		}
-
-		public int getLine() {
-			return line;
-		}
-
-		public int getPos() {
-			return pos;
-		}
-
-		public String getText() {
-			return text;
-		}
-
-		public CompletionType getType() {
-			return type;
-		}
-
-		static Completion newInstance(CompletionType type, String text,
-				int line, int pos) {
-			return newInstance(type, text, line, pos, false);
-		}
-
-		static Completion newInstance(CompletionType type, String text,
-				int line, int pos, boolean local) {
-			Completion c = new Completion();
-			c.type = type;
-			c.text = text;
-			c.line = line;
-			c.pos = pos;
-			c.local = local;
-			return c;
-		}
-
-		@Deprecated
-		static Completion newVariableInstance(String text, int line, int pos) {
-			return newVariableInstance(text, line, pos, false);
-		}
-
-		static Completion newVariableInstance(String text, int line, int pos,
-				boolean local) {
-			return newInstance(CompletionType.VARIABLE, text, line, pos, local);
-		}
-
-		static Completion newFunctionInstance(String text, int line, int pos) {
-			return newInstance(CompletionType.FUNCTION, text, line, pos);
-		}
-
-		public String toString() {
-			return getType().name() + ":" + getText();
-		}
-	}
+class LuaSyntaxAnalyzer {
 
 	LuaParser.ChunkContext context;
 	int endIdx;
 
-	Stack<Map<String, Completion>> relevantStack = new Stack<>();
+	Stack<Map<String, CompletionInfo>> relevantStack = new Stack<>();
 
 	Map<String, List<Parameter>> functionParams = new TreeMap<>();
 
-	public Collection<Completion> getCompletions() {
-		Map<String, Completion> map = new HashMap<>();
-		for (Map<String, Completion> scope : relevantStack) {
-			for (Completion c : scope.values()) {
+	/**
+	 * @return a copy of the values in the current state of the stack.
+	 */
+	public Collection<CompletionInfo> getCompletions() {
+		Map<String, CompletionInfo> map = new HashMap<>();
+		for (Map<String, CompletionInfo> scope : relevantStack) {
+			for (CompletionInfo c : scope.values()) {
 				if (!map.containsKey((c.getText())))
 					map.put(c.getText(), c);
 			}
@@ -139,6 +78,11 @@ public class LuaSyntaxAnalyzer {
 		return map.values();
 	}
 
+	/**
+	 * @return the parse tree of the last parsing attempt, may or may not be
+	 *         broken/incomplete. Check the return value of initCompletions
+	 *         before you use this.
+	 */
 	public LuaParser.ChunkContext getContext() {
 		return context;
 	}
@@ -160,7 +104,7 @@ public class LuaSyntaxAnalyzer {
 			context = parser.chunk();
 			return true;
 		} catch (RecognitionException e) {
-			Logging.info("Parser unhappy with current script, no changes to completions. This is ok."
+			Logging.debug("Parser unhappy with current script state. This is ok."
 					+ e.getMessage());
 			return false;
 		} catch (Exception e) {
@@ -174,39 +118,68 @@ public class LuaSyntaxAnalyzer {
 			ParserRuleContext inner, final int ruleIdx, final Class<T> t) {
 		while ((inner = inner.getParent()).getRuleIndex() != ruleIdx) {
 			if (inner.getRuleIndex() == LuaParser.RULE_chunk)
-				throw new IllegalArgumentException("Reached top of AST, no parent context of type "
-						+ t.getName() + " found. Coding error.");
+				throw new IllegalArgumentException(
+						"Reached top of AST, no parent context of type "
+								+ t.getName() + " found. Coding error.");
 		}
 		return t.cast(inner);
+	}
+
+	static boolean hasParentRuleContext(ParserRuleContext inner,
+			final int ruleIdx) {
+		while ((inner = inner.getParent()).getRuleIndex() != ruleIdx) {
+			if (inner.getRuleIndex() == LuaParser.RULE_chunk)
+				return false;
+		}
+		return true;
 	}
 
 	static StatContext getParentStatContext(final ParserRuleContext inner) {
 		return getParentRuleContext(inner, LuaParser.RULE_stat,
 				StatContext.class);
 	}
-	
-	static String start(ParserRuleContext ctx)
-	{
+
+	static <T extends ParserRuleContext> T getChildRuleContext(
+			final ParserRuleContext parent, final int ruleIdx,
+			final Class<? extends T> t) {
+		for (ParseTree child : parent.children) {
+			if (child instanceof ParserRuleContext
+					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
+				return t.cast(child);
+		}
+		throw new IllegalArgumentException(
+				"Bad AST query, no child context of type " + t.getName()
+						+ " found. Coding error.");
+	}
+
+	static <T extends ParserRuleContext> T getChildRuleContextRecursive(
+			final ParserRuleContext parent, final Class<? extends T> t,
+			final int... ruleIdxes) {
+		ParserRuleContext childCtx = parent;
+		for (int ruleIdx : ruleIdxes) {
+			childCtx = getChildRuleContext(parent, ruleIdx,
+					ParserRuleContext.class);
+		}
+		return t.cast(childCtx);
+	}
+
+	static String start(ParserRuleContext ctx) {
 		return ctx.getStart().getText();
 	}
-	
-	static String next(ParserRuleContext ctx)
-	{
+
+	static String next(ParserRuleContext ctx) {
 		return ctx.getChild(1).getText();
 	}
-	
-	static int line(ParserRuleContext ctx)
-	{
+
+	static int line(ParserRuleContext ctx) {
 		return ctx.getStart().getLine();
 	}
-	
-	static int pos(ParserRuleContext ctx)
-	{
+
+	static int pos(ParserRuleContext ctx) {
 		return ctx.getStart().getCharPositionInLine();
 	}
-	
-	static String txt(ParserRuleContext ctx)
-	{
+
+	static String txt(ParserRuleContext ctx) {
 		return ctx.getText();
 	}
 
@@ -218,10 +191,68 @@ public class LuaSyntaxAnalyzer {
 		private static final String FOR = "for";
 		CaretInfo info;
 		boolean frozen = false;
-		Stack<Map<String, Completion>> scopes = new Stack<>();
+		Stack<Map<String, CompletionInfo>> scopes = new Stack<>();
+		Map<String, CompletionInfo> global = new HashMap<String, CompletionInfo>();
 
 		LuaListener(CaretInfo info) {
 			this.info = info;
+		}
+
+		boolean isDeclaredLocal(String name) {
+			if (global.containsKey(name))
+				return false;
+			for (int i = 0; i < scopes.size(); i++) {
+				if (scopes.get(i).containsKey(name)) {
+					return scopes.get(i).get(name).isLocal();
+				}
+			}
+			return false;
+		}
+
+		void replaceCompletionInfoRecursive(CompletionInfo info) {
+			if (global.containsKey(info.getText())) {
+				global.put(info.getText(), info);
+				Logging.debug("Replaced a completion '" + info.getText()
+						+ "' in global scope.");
+			}
+			for (int i = 0; i < scopes.size(); i++) {
+				if (scopes.get(i).containsKey(info.getText())) {
+					scopes.get(i).put(info.getText(), info);
+					Logging.debug("Replaced a completion '" + info.getText()
+							+ "' in a sub-scope.");
+				}
+			}
+		}
+
+		void addVariable(String name, ParserRuleContext ctx, boolean local) {
+
+			CompletionInfo varInfo = CompletionInfo.newVariableInstance(name,
+					line(ctx), pos(ctx), local);
+			if (local || isDeclaredLocal(name)) {
+				scopes.peek().put(name, varInfo);
+			} else {
+				global.put(name, varInfo);
+			}
+		}
+
+		void addFunction(String name, ParserRuleContext ctx, boolean local) {
+			CompletionInfo funcInfo = CompletionInfo.newFunctionInstance(name,
+					line(ctx), pos(ctx), local);
+			if (local) {
+				scopes.peek().put(name, funcInfo);
+			} else {
+				global.put(name, funcInfo);
+			}
+
+		}
+
+		@Override
+		public void exitNamelist(NamelistContext ctx) {
+			for (ParseTree pt : ctx.children) {
+				if (pt.getText().matches(","))
+					continue;
+				addVariable(pt.getText(), ctx, true);
+			}
 		}
 
 		@Override
@@ -229,17 +260,19 @@ public class LuaSyntaxAnalyzer {
 			String varName = start(ctx);
 			LuaParser.StatContext statCtx = getParentStatContext(ctx);
 			boolean local = start(statCtx).equals(LOCAL);
-			scopes.peek().put(
-					varName,
-					Completion.newVariableInstance(varName, line(ctx), pos(ctx), local));
+
+			// if it is a subrule of prefixExp, it might as well be a function
+			// call
+			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp)) {
+				addVariable(varName, ctx, local);
+			}
 		}
 
 		@Override
 		public void exitFuncname(LuaParser.FuncnameContext ctx) {
 			String funcName = txt(ctx);
-			scopes.peek().put(
-					funcName,
-					Completion.newFunctionInstance(funcName, line(ctx), pos(ctx)));
+			addFunction(funcName, ctx, false);
+
 		}
 
 		@Override
@@ -261,9 +294,7 @@ public class LuaSyntaxAnalyzer {
 				ParseTree t = ctx.getChild(1);
 				if (t.getChildCount() == 0) // single var decl
 				{
-					scopes.peek().put(
-							next(ctx),
-							Completion.newVariableInstance(next(ctx), line(ctx), pos(ctx), true));
+					addVariable(next(ctx), ctx, true);
 				} else {
 					// for x,y,z in {a,bc} do ... ignored for now //
 					Logging.debug("for x,y,z in exp not supported yet");
@@ -273,9 +304,7 @@ public class LuaSyntaxAnalyzer {
 			case LOCAL:
 				if (ctx.getChild(1).getText().equals(FUNCTION)) {
 					String localFunction = ctx.getChild(2).getText();
-					scopes.peek().put(
-							localFunction,
-							Completion.newFunctionInstance(localFunction, line(ctx), pos(ctx)));
+					addFunction(localFunction, ctx, true);
 				}
 
 				break;
@@ -306,9 +335,9 @@ public class LuaSyntaxAnalyzer {
 					Logging.info("Anonymous function hit. Redefining var '"
 							+ currentFunction + "' to a function.");
 					// var declaration in parent scope needs to be replaced.
-					scopes.get(scopes.size() - 2).put(
-							currentFunction,
-							Completion.newFunctionInstance(currentFunction, line(ctx), pos(ctx)));
+					replaceCompletionInfoRecursive(CompletionInfo
+							.newFunctionInstance(currentFunction, line(ctx),
+									pos(ctx), false));
 				} catch (NullPointerException e) {
 					Logging.error("Unknown type of anonymous function def, or some completely different construct.");
 				}
@@ -327,13 +356,7 @@ public class LuaSyntaxAnalyzer {
 							for (int i = 0; i < childCount; i += 2) {
 								ParseTree nt = t.getChild(i);
 								params.add(new Parameter(null, nt.getText()));
-								scopes.peek()
-										.put(nt.getText(),
-												Completion.newVariableInstance(
-														nt.getText(),
-														line(ctx),
-														pos(ctx),
-														true));
+								addVariable(nt.getText(), ctx, true);
 							}
 						}
 					}
@@ -344,13 +367,14 @@ public class LuaSyntaxAnalyzer {
 
 		private void pushScope() {
 			scopes.push(new TreeMap<>());
-			Logging.info("Scope depth now " + scopes.size());
+			Logging.debug("Scope depth now " + scopes.size());
 		}
 
 		private void useScope() {
 			relevantStack = new Stack<>();
+			relevantStack.add(global);
 			relevantStack.addAll(scopes);
-			Logging.info("Relevant scope identified as " + relevantStack);
+			Logging.debug("Relevant scope identified as " + relevantStack);
 			frozen = true;
 		}
 

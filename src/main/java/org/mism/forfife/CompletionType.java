@@ -25,42 +25,6 @@
  */
 package org.mism.forfife;
 
-import java.io.StringReader;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Lexer;
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.fife.ui.rsyntaxtextarea.folding.Fold;
-import org.fife.ui.rsyntaxtextarea.folding.FoldParser;
-import org.mism.forfife.lua.LuaLexer;
-import org.mism.forfife.lua.LuaParser;
-/**
- * Register this class with org.fife.ui.rsyntaxtextarea.folding.FoldParserManager.get() singleton instance.
- * 
- * @author tr1nergy
- *
- */
-public class LuaFoldParser implements FoldParser {
-
-	@Override
-	public List<Fold> getFolds(RSyntaxTextArea textArea) {
-		try {
-			
-			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
-					textArea.getText()));
-			Lexer lx = new LuaLexer(str);
-			CommonTokenStream tokStr = new CommonTokenStream(lx);
-			LuaParser parser = new LuaParser(tokStr);
-			LuaFoldsVisitor lfv = new LuaFoldsVisitor(textArea);
-			lfv.visit(parser.chunk());
-			Logging.debug("Found " + lfv.getFolds().size() + " folds.");
-			return lfv.getFolds();
-		} catch (Exception e) {
-			Logging.error("No folds found due to exception", e);
-			return new ArrayList<Fold>();
-		}
-	}
+enum CompletionType {
+	FUNCTION, VARIABLE
 }
