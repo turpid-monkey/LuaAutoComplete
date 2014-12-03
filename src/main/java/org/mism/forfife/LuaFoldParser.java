@@ -29,6 +29,8 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.text.BadLocationException;
+
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
@@ -37,8 +39,11 @@ import org.fife.ui.rsyntaxtextarea.folding.Fold;
 import org.fife.ui.rsyntaxtextarea.folding.FoldParser;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
+
 /**
- * Register this class with org.fife.ui.rsyntaxtextarea.folding.FoldParserManager.get() singleton instance.
+ * Register this class with
+ * org.fife.ui.rsyntaxtextarea.folding.FoldParserManager.get() singleton
+ * instance.
  * 
  * @author tr1nergy
  *
@@ -46,9 +51,31 @@ import org.mism.forfife.lua.LuaParser;
 public class LuaFoldParser implements FoldParser {
 
 	@Override
-	public List<Fold> getFolds(RSyntaxTextArea textArea) {
+	public List<Fold> getFolds(final RSyntaxTextArea textArea) {
+		return getFolds(new TextField() {
+
+			@Override
+			public String getText() {
+				return textArea.getText();
+			}
+
+			@Override
+			public int getLineStartOffset(int i) throws BadLocationException {
+				return textArea.getLineStartOffset(i);
+			}
+
+			@Override
+			public Fold createFold(int type, int offset)
+					throws BadLocationException {
+				return new Fold(type, textArea, offset);
+			}
+
+		});
+	}
+
+	public List<Fold> getFolds(TextField textArea) {
 		try {
-			
+
 			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
 					textArea.getText()));
 			Lexer lx = new LuaLexer(str);

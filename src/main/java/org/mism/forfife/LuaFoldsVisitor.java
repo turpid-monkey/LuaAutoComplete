@@ -30,7 +30,6 @@ import java.util.List;
 
 import javax.swing.text.BadLocationException;
 
-import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.folding.Fold;
 import org.fife.ui.rsyntaxtextarea.folding.FoldType;
 import org.mism.forfife.lua.LuaBaseVisitor;
@@ -38,9 +37,9 @@ import org.mism.forfife.lua.LuaParser.BlockContext;
 
 class LuaFoldsVisitor extends LuaBaseVisitor<Void> {
 	private final List<Fold> folds = new ArrayList<Fold>();
-	private final RSyntaxTextArea textArea;
+	private final TextField textArea;
 
-	public LuaFoldsVisitor(RSyntaxTextArea textArea) {
+	public LuaFoldsVisitor(TextField textArea) {
 		this.textArea = textArea;
 	}
 
@@ -59,7 +58,7 @@ class LuaFoldsVisitor extends LuaBaseVisitor<Void> {
 				int endOffset = textArea.getLineStartOffset(ctx.getParent()
 						.getStop().getLine() - 1)
 						+ ctx.getParent().getStop().getCharPositionInLine();
-				Fold f = new Fold(FoldType.CODE, textArea, offset);
+				Fold f = textArea.createFold(FoldType.CODE, offset);
 				f.setEndOffset(endOffset);
 				folds.add(f);
 			}

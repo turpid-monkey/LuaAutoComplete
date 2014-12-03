@@ -48,7 +48,6 @@ import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
 import org.mism.forfife.lua.LuaParser.FuncbodyContext;
 import org.mism.forfife.lua.LuaParser.NamelistContext;
-import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 
 /**
