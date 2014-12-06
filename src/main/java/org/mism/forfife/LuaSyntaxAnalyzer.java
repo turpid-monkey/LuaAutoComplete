@@ -174,7 +174,7 @@ class LuaSyntaxAnalyzer {
 		return ctx.getStart().getLine();
 	}
 
-	static int pos(ParserRuleContext ctx) {
+	static int col(ParserRuleContext ctx) {
 		return ctx.getStart().getCharPositionInLine();
 	}
 
@@ -226,7 +226,7 @@ class LuaSyntaxAnalyzer {
 		void addVariable(String name, ParserRuleContext ctx, boolean local) {
 
 			CompletionInfo varInfo = CompletionInfo.newVariableInstance(name,
-					line(ctx), pos(ctx), local);
+					line(ctx), col(ctx), local);
 			if (local || isDeclaredLocal(name)) {
 				scopes.peek().put(name, varInfo);
 			} else {
@@ -236,7 +236,7 @@ class LuaSyntaxAnalyzer {
 
 		void addFunction(String name, ParserRuleContext ctx, boolean local) {
 			CompletionInfo funcInfo = CompletionInfo.newFunctionInstance(name,
-					line(ctx), pos(ctx), local);
+					line(ctx), col(ctx), local);
 			if (local) {
 				scopes.peek().put(name, funcInfo);
 			} else {
@@ -262,7 +262,8 @@ class LuaSyntaxAnalyzer {
 
 			// if it is a subrule of prefixExp, it might as well be a function
 			// call
-			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp)) {
+			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp) 
+					&& !hasParentRuleContext(ctx, LuaParser.RULE_functioncall)) {
 				addVariable(varName, ctx, local);
 			}
 		}
@@ -294,11 +295,7 @@ class LuaSyntaxAnalyzer {
 				if (t.getChildCount() == 0) // single var decl
 				{
 					addVariable(next(ctx), ctx, true);
-				} else {
-					// for x,y,z in {a,bc} do ... ignored for now //
-					Logging.debug("for x,y,z in exp not supported yet");
-				}
-
+				} // else should be a namelist => handled by exitNamelist()
 				break;
 			case LOCAL:
 				if (ctx.getChild(1).getText().equals(FUNCTION)) {
@@ -336,7 +333,7 @@ class LuaSyntaxAnalyzer {
 					// var declaration in parent scope needs to be replaced.
 					replaceCompletionInfoRecursive(CompletionInfo
 							.newFunctionInstance(currentFunction, line(ctx),
-									pos(ctx), false));
+									col(ctx), false));
 				} catch (NullPointerException e) {
 					Logging.error("Unknown type of anonymous function def, or some completely different construct.");
 				}

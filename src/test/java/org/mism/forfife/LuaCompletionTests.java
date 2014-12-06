@@ -222,4 +222,15 @@ public class LuaCompletionTests {
 				+ "end\n", c);
 		assertEquals("FUNCTION:localDanger; VARIABLE:someVar;", toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void testForNamelistInExp()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c = CaretInfo.newInstance(130);
+		an.initCompletions("for some, other in anyExpr do"
+				+ "   nothing()"
+				+ "end\n", c);
+		assertEquals("VARIABLE:anyExpr; VARIABLE:nothing; local VARIABLE:other; local VARIABLE:some;", toString(an.getCompletions()));
+	}
 }

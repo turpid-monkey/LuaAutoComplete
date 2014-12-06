@@ -29,7 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Yet another logging implementation. Use Logging.instance().getLoggers() to chance logging behaviour.
+ * Yet another logging implementation. Use Logging.instance().getLoggers() to
+ * chance logging behaviour.
  * 
  * @author tr1nergy
  *
@@ -40,19 +41,19 @@ final class Logging {
 
 		@Override
 		public void debug(String out) {
-			System.out.println(out);
+			System.out.println(Logging.class.getName() + ".debug: " + out);
 		}
 
 		@Override
 		public void error(String out, Exception e) {
-			System.out.println(out);
+			System.out.println(Logging.class.getName() + ".debug: " + out);
 			if (e != null)
 				e.printStackTrace();
 		}
 
 		@Override
 		public void info(String out) {
-			System.out.println(out);
+			System.out.println(Logging.class.getName() + ".debug: " + out);
 		}
 
 	}
