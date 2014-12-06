@@ -30,25 +30,17 @@ import java.util.List;
 
 import javax.swing.text.JTextComponent;
 
-import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.FunctionCompletion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
-import org.fife.ui.autocomplete.ShorthandCompletion;
 import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 public class LuaCompletionProvider extends DefaultCompletionProvider {
 	LuaCompletionHandler handler = new LuaCompletionHandler();
 
-	static String[] LUA_KEY_WORDS = { "and", "break", "do", "else", "elseif",
-			"end", "false", "for", "function", "if", "in", "local", "nil",
-			"not", "or", "repeat", "return", "then", "true", "until", "while" };
-
-	static String[][] LUA_SHORTCUTS = {
-			{ "for i", "for i=1 to 10 do\n\nend\n" },
-			{ "for j", "for j=1 to 10 do\n\nend\n" } };
+	StaticLuaCompletions staticCompletions = new StaticLuaCompletions(this);
 
 	String currentScript = "";
 
@@ -57,25 +49,9 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	}
 
 	public LuaCompletionProvider() {
-		// super.comparator = new LuaCompletionComparator();
-		initStaticCompletions();
 		setParameterizedCompletionParams('(', ",", ')');
 	}
 
-	protected void initStaticCompletions() {
-		for (String keyWord : LUA_KEY_WORDS) {
-			BasicCompletion keyCompl = new BasicCompletion(this, keyWord,
-					"LUA keyword.");
-			keyCompl.setRelevance(0);
-			checkProviderAndAdd(keyCompl);
-		}
-		for (String[] shortCut : LUA_SHORTCUTS) {
-			ShorthandCompletion scCompl = new ShorthandCompletion(this,
-					shortCut[0], shortCut[1]);
-			scCompl.setRelevance(9000);
-			checkProviderAndAdd(scCompl);
-		}
-	}
 
 	protected String i18n(Object o) {
 		return o.toString();
@@ -122,7 +98,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			return;
 		handler.validChange(analyzer.getContext());
 		super.clear();
-		initStaticCompletions();
+		addCompletions(staticCompletions.getCompletions());
 		initDynamicCompletions(analyzer);
 	}
 

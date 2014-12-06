@@ -231,6 +231,6 @@ public class LuaCompletionTests {
 		an.initCompletions("for some, other in anyExpr do"
 				+ "   nothing()"
 				+ "end\n", c);
-		assertEquals("VARIABLE:anyExpr; VARIABLE:nothing; local VARIABLE:other; local VARIABLE:some;", toString(an.getCompletions()));
+		assertEquals("local VARIABLE:other; local VARIABLE:some;", toString(an.getCompletions()));
 	}
 }

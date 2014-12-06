@@ -25,10 +25,10 @@
  */
 package org.mism.forfife;
 
-
 class CompletionInfo {
 	CompletionType type;
 	String text;
+	String descr;
 	int line;
 	int pos;
 	boolean local;
@@ -53,6 +53,10 @@ class CompletionInfo {
 		return type;
 	}
 
+	public String getDescr() {
+		return descr;
+	}
+
 	static CompletionInfo newInstance(CompletionType type, String text,
 			int line, int pos) {
 		return newInstance(type, text, line, pos, false);
@@ -60,12 +64,18 @@ class CompletionInfo {
 
 	static CompletionInfo newInstance(CompletionType type, String text,
 			int line, int pos, boolean local) {
+		return newInstance(type, text, null, line, pos, local);
+	}
+
+	static CompletionInfo newInstance(CompletionType type, String text,
+			String descr, int line, int pos, boolean local) {
 		CompletionInfo c = new CompletionInfo();
 		c.type = type;
 		c.text = text;
 		c.line = line;
 		c.pos = pos;
 		c.local = local;
+		c.descr = descr;
 		return c;
 	}
 
@@ -73,10 +83,14 @@ class CompletionInfo {
 			boolean local) {
 		return newInstance(CompletionType.VARIABLE, text, line, pos, local);
 	}
-	
-	static CompletionInfo newFunctionInstance(String txt, int line, int pos, boolean local)
-	{
+
+	static CompletionInfo newFunctionInstance(String txt, int line, int pos,
+			boolean local) {
 		return newInstance(CompletionType.FUNCTION, txt, line, pos, local);
+	}
+
+	static CompletionInfo newKeyWordInstance(String txt, String descr) {
+		return newInstance(CompletionType.LANGUAGE, txt, 0, 0, false);
 	}
 
 	public String toString() {
