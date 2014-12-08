@@ -233,4 +233,13 @@ public class LuaCompletionTests {
 				+ "end\n", c);
 		assertEquals("local VARIABLE:other; local VARIABLE:some;", toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void testAssigmentTracking()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		CaretInfo c= CaretInfo.newInstance(0);
+		an.initCompletions("someVar = SuperClass()", c);
+		assertEquals(an.getTypeMap().get("someVar"), "SuperClass");
+	}
 }

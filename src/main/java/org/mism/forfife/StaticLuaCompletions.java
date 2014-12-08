@@ -260,16 +260,20 @@ public class StaticLuaCompletions {
 				throw new IllegalArgumentException(
 						"Needs BC <repltext> <short-descr> <summary>"
 								+ Arrays.toString(row));
-			completions.add(new BasicCompletion(provider, row[1], row[2],
-					row[3]));
+			BasicCompletion bc = new BasicCompletion(provider, row[1], row[2],
+					row[3]);
+			bc.setRelevance(500);
+			completions.add(bc);
 			break;
 		case "SH":
 			if (row.length != 4)
 				throw new IllegalArgumentException(
 						"Needs SH <short-cut> <repltext> <short-descr>: "
 								+ Arrays.toString(row));
-			completions.add(new ShorthandCompletion(provider, row[1], row[2],
-					row[3]));
+			ShorthandCompletion sc = new ShorthandCompletion(provider, row[1], row[2],
+					row[3]);
+			sc.setRelevance(500);
+			completions.add(sc);
 			break;
 		case "PC":
 			if (row.length < 4)
@@ -284,6 +288,7 @@ public class StaticLuaCompletions {
 				params.add(new Parameter(null, row[i]));
 			}
 			fc.setParams(params);
+			fc.setRelevance(1000);
 			completions.add(fc);
 			break;
 		}

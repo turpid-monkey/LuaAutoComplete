@@ -26,7 +26,9 @@
 package org.mism.forfife;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.text.JTextComponent;
 
@@ -44,6 +46,12 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	String currentScript = "";
 
+	Map<String, String> typeMap = new HashMap<String, String>();
+
+	public Map<String, String> getTypeMap() {
+		return typeMap;
+	}
+
 	public LuaCompletionHandler getHandler() {
 		return handler;
 	}
@@ -52,19 +60,18 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		setParameterizedCompletionParams('(', ",", ')');
 	}
 
-
 	protected String i18n(Object o) {
 		return o.toString();
 	}
 
-	protected void initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
+	protected List<Completion> initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
 		List<Completion> completions = new ArrayList<>();
 		for (CompletionInfo comp : analyzer.getCompletions()) {
 			switch (comp.getType()) {
 			case FUNCTION:
 				FunctionCompletion fc = new FunctionCompletion(this,
 						comp.getText(), "function");
-				fc.setRelevance(1000);
+				fc.setRelevance(4000);
 				List<Parameter> params = analyzer.getFunctionParams(comp
 						.getText());
 				fc.setParams(params);
@@ -73,21 +80,30 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			case VARIABLE:
 				VariableCompletion varCompl = new VariableCompletion(this,
 						comp.getText(), "variable");
-				varCompl.setRelevance(4000);
+				varCompl.setRelevance(9000);
 				completions.add(varCompl);
+				break;
+			case LANGUAGE:
+				throw new IllegalArgumentException("Not yet supported.");
+				
 
 			}
 		}
-		addCompletions(completions);
+		return completions;
 	}
 
 	@Override
 	public List<Completion> getCompletions(JTextComponent comp) {
-		refreshCompletions(comp.getText(), getCaretInfoFor((RSyntaxTextArea)comp));
+		List<Completion> completions = new ArrayList<Completion>();
+		fillCompletions(completions, comp.getText(),
+				getCaretInfoFor((RSyntaxTextArea) comp));
+		super.clear();
+		Logging.debug("Created " + completions.size() + " completions.");
+		addCompletions(completions);
 		return super.getCompletions(comp);
 	}
 
-	void refreshCompletions(String luaScript, CaretInfo info) {
+	protected void fillCompletions(List<Completion> completions, String luaScript, CaretInfo info) {
 		luaScript = luaScript.trim();
 		if (currentScript.equals(luaScript)) {
 			return;
@@ -97,9 +113,10 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		if (!analyzer.initCompletions(luaScript, info))
 			return;
 		handler.validChange(analyzer.getContext());
-		super.clear();
-		addCompletions(staticCompletions.getCompletions());
-		initDynamicCompletions(analyzer);
+		typeMap.clear();
+		typeMap.putAll(analyzer.getTypeMap());
+		completions.addAll(staticCompletions.getCompletions());
+		completions.addAll(initDynamicCompletions(analyzer));
 	}
 
 	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea) {

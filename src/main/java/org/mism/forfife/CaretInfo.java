@@ -30,7 +30,7 @@ package org.mism.forfife;
  * 
  * @author tr1nergy
  */
-class CaretInfo {
+public class CaretInfo {
 	
 	private int position;
 	private int line;

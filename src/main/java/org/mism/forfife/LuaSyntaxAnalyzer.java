@@ -48,6 +48,7 @@ import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
 import org.mism.forfife.lua.LuaParser.FuncbodyContext;
 import org.mism.forfife.lua.LuaParser.NamelistContext;
+import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 
 /**
@@ -60,8 +61,8 @@ class LuaSyntaxAnalyzer {
 	int endIdx;
 
 	Stack<Map<String, CompletionInfo>> relevantStack = new Stack<>();
-
 	Map<String, List<Parameter>> functionParams = new TreeMap<>();
+	Map<String, String> typeMap = new HashMap<String, String>();
 
 	/**
 	 * @return a copy of the values in the current state of the stack.
@@ -84,6 +85,13 @@ class LuaSyntaxAnalyzer {
 	 */
 	public LuaParser.ChunkContext getContext() {
 		return context;
+	}
+	
+    /**
+     * @return a map containing hints towards types of variables
+     */
+	public Map<String, String> getTypeMap() {
+		return typeMap;
 	}
 
 	/**
@@ -146,18 +154,19 @@ class LuaSyntaxAnalyzer {
 					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
 				return t.cast(child);
 		}
-		throw new IllegalArgumentException(
-				"Bad AST query, no child context of type " + t.getName()
-						+ " found. Coding error.");
+		return null;
 	}
 
 	static <T extends ParserRuleContext> T getChildRuleContextRecursive(
 			final ParserRuleContext parent, final Class<? extends T> t,
-			final int... ruleIdxes) {
+			final int... path) {
 		ParserRuleContext childCtx = parent;
-		for (int ruleIdx : ruleIdxes) {
-			childCtx = getChildRuleContext(parent, ruleIdx,
+		for (int ruleIdx : path) {
+			childCtx = getChildRuleContext(childCtx, ruleIdx,
 					ParserRuleContext.class);
+			if (childCtx == null) {
+				return null;
+			}
 		}
 		return t.cast(childCtx);
 	}
@@ -188,6 +197,8 @@ class LuaSyntaxAnalyzer {
 		private static final String FUNCTION = "function";
 		private static final String LOCAL = "local";
 		private static final String FOR = "for";
+		private static final String ASSIGN = "=";
+
 		CaretInfo info;
 		boolean frozen = false;
 		Stack<Map<String, CompletionInfo>> scopes = new Stack<>();
@@ -262,7 +273,7 @@ class LuaSyntaxAnalyzer {
 
 			// if it is a subrule of prefixExp, it might as well be a function
 			// call
-			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp) 
+			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp)
 					&& !hasParentRuleContext(ctx, LuaParser.RULE_functioncall)) {
 				addVariable(varName, ctx, local);
 			}
@@ -277,12 +288,12 @@ class LuaSyntaxAnalyzer {
 
 		@Override
 		public void enterBlock(BlockContext ctx) {
-			pushScope();
+			pushScope(ctx);
 		}
 
 		@Override
 		public void enterFuncbody(FuncbodyContext ctx) {
-			pushScope();
+			pushScope(ctx);
 		}
 
 		@Override
@@ -304,6 +315,19 @@ class LuaSyntaxAnalyzer {
 				}
 
 				break;
+			}
+			if (ctx.getChildCount() == 3) {
+				if (ctx.getChild(1).getText().equals(ASSIGN)) {
+					PrefixexpContext prefixExp = getChildRuleContextRecursive(
+							ctx, PrefixexpContext.class,
+							LuaParser.RULE_explist, LuaParser.RULE_exp,
+							LuaParser.RULE_prefixexp);
+					if (prefixExp != null) {
+						typeMap.put(start(ctx), start(prefixExp));
+						Logging.debug("Found a possible type in line " + line(ctx) + ": var " + start(ctx)
+								+ " = " + start(prefixExp));
+					}
+				}
 			}
 		}
 
@@ -361,9 +385,9 @@ class LuaSyntaxAnalyzer {
 			popScope(stop.getStopIndex());
 		}
 
-		private void pushScope() {
+		private void pushScope(ParserRuleContext ctx) {
 			scopes.push(new TreeMap<>());
-			Logging.debug("Scope depth now " + scopes.size());
+			//Logging.debug("Scope depth in line " + line(ctx) + ", col " + col(ctx) + " now " + scopes.size());
 		}
 
 		private void useScope() {
