@@ -39,6 +39,7 @@ import org.fife.ui.autocomplete.FunctionCompletion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.mism.forfife.visitors.DoxygenVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
 import org.mism.forfife.visitors.UgLoadScriptVisitor;
@@ -74,7 +75,8 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	protected List<Completion> initDynamicCompletions(
 			Collection<CompletionInfo> infos,
-			Map<String, List<Parameter>> functionParams) {
+			Map<String, List<Parameter>> functionParams,
+			Map<String, String> functionDescr) {
 		List<Completion> completions = new ArrayList<>();
 		for (CompletionInfo comp : infos) {
 			switch (comp.getType()) {
@@ -84,6 +86,9 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				fc.setRelevance(4000);
 				List<Parameter> params = functionParams.get(comp.getText());
 				fc.setParams(params);
+				if (functionDescr.containsKey(comp.getText())) {
+					fc.setShortDescription(functionDescr.get(comp.getText()));
+				}
 				completions.add(fc);
 				break;
 			case VARIABLE:
@@ -102,10 +107,10 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	// TODO: Pass list as reference
 	// TODO: Provider param information as part of the completion info object
-	protected List<Completion> initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
+	protected List<Completion> initDynamicCompletions(LuaSyntaxInfo analyzer) {
 
 		return initDynamicCompletions(analyzer.getCompletions(),
-				analyzer.getFunctionParams());
+				analyzer.getFunctionParams(), analyzer.getDoxyGenMap());
 	}
 
 	@Override
@@ -126,7 +131,8 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			return;
 		}
 		currentScript = luaScript;
-		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer(new RequireVisitor());
+		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer(
+				visitors.toArray(new LuaCompletionVisitor[visitors.size()]));
 		if (!analyzer.initCompletions(luaScript, info))
 			return;
 		handler.validChange(analyzer.getContext());
@@ -138,6 +144,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {
 		visitors.add(new RequireVisitor());
+		visitors.add(new DoxygenVisitor());
 		// TODO move visitor to UG4LuaAutoComplete project
 		visitors.add(new UgLoadScriptVisitor());
 	}

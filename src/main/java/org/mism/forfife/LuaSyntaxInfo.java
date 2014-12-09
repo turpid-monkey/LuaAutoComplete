@@ -25,6 +25,7 @@
  */
 package org.mism.forfife;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -45,11 +46,16 @@ public class LuaSyntaxInfo {
 	protected Stack<Map<String, CompletionInfo>> relevantStack = new Stack<>();
 	protected Map<String, List<Parameter>> functionParams = new TreeMap<>();
 	protected Map<String, String> typeMap = new HashMap<String, String>();
+	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
 	protected Set<LuaResource> dependentResources = new HashSet<>();
 
 	public String getLuaScript() {
 		return luaScript;
+	}
+
+	public Map<String, String> getDoxyGenMap() {
+		return doxyGenMap;
 	}
 
 	public void setLuaScript(String luaScript) {
@@ -109,4 +115,17 @@ public class LuaSyntaxInfo {
 		this.dependentResources = dependentResources;
 	}
 
+	/**
+	 * @return a copy of the values in the current state of the stack.
+	 */
+	public Collection<CompletionInfo> getCompletions() {
+		Map<String, CompletionInfo> map = new HashMap<>();
+		for (Map<String, CompletionInfo> scope : relevantStack) {
+			for (CompletionInfo c : scope.values()) {
+				if (!map.containsKey((c.getText())))
+					map.put(c.getText(), c);
+			}
+		}
+		return map.values();
+	}
 }

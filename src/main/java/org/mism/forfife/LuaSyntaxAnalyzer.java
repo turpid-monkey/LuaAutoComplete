@@ -61,6 +61,7 @@ import org.mism.forfife.lua.LuaParser.NamelistContext;
 import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
+
 /**
  * Parses a script and tries to collect all relevant data for proposals.
  * 
@@ -72,24 +73,9 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
 	public LuaSyntaxAnalyzer(LuaCompletionVisitor... visitors) {
 		this.visitors = visitors;
-		for (LuaCompletionVisitor v : visitors)
-		{
+		for (LuaCompletionVisitor v : visitors) {
 			v.setInfo(this);
 		}
-	}
-
-	/**
-	 * @return a copy of the values in the current state of the stack.
-	 */
-	public Collection<CompletionInfo> getCompletions() {
-		Map<String, CompletionInfo> map = new HashMap<>();
-		for (Map<String, CompletionInfo> scope : relevantStack) {
-			for (CompletionInfo c : scope.values()) {
-				if (!map.containsKey((c.getText())))
-					map.put(c.getText(), c);
-			}
-		}
-		return map.values();
 	}
 
 	/**
@@ -98,6 +84,7 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	 */
 	public boolean initCompletions(String luaScript, CaretInfo info) {
 		try {
+			this.luaScript = luaScript;
 			endIdx = luaScript.trim().length() - 1;
 			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
 					luaScript));
@@ -121,7 +108,6 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		}
 	}
 
-	
 	private class LuaListener extends LuaBaseListener {
 
 		private static final String LEFT_BRACKET = "(";

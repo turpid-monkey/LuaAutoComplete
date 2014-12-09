@@ -28,10 +28,14 @@ package org.mism.forfife;
 import java.io.IOException;
 import java.io.StringReader;
 
+import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.DefaultErrorStrategy;
+import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
@@ -111,7 +115,9 @@ public class LuaParseTreeUtil {
 
 	public static ChunkContext parse(final String luaScript)
 			throws IOException, RecognitionException {
-		return new LuaParser(new CommonTokenStream(new LuaLexer(
-				new ANTLRInputStream(new StringReader(luaScript))))).chunk();
+		LuaParser parser = new LuaParser(new CommonTokenStream(new LuaLexer(
+				new ANTLRInputStream(new StringReader(luaScript)))));
+		parser.getErrorListeners().clear();
+		return parser.chunk();
 	}
 }
