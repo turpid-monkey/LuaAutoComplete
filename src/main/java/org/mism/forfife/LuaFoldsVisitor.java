@@ -54,7 +54,8 @@ class LuaFoldsVisitor extends LuaBaseVisitor<Void> {
 			offset = textArea.getLineStartOffset(ctx.getParent().getStart()
 					.getLine() - 1)
 					+ ctx.getParent().getStart().getCharPositionInLine();
-			if (offset != 0) {
+			if (offset != 0 && ctx.getParent() != null
+					&& ctx.getParent().getStop() != null) {
 				int endOffset = textArea.getLineStartOffset(ctx.getParent()
 						.getStop().getLine() - 1)
 						+ ctx.getParent().getStop().getCharPositionInLine();
