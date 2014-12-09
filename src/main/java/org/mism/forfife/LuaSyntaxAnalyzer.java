@@ -25,6 +25,15 @@
  */
 package org.mism.forfife;
 
+import static org.mism.forfife.LuaParseTreeUtil.col;
+import static org.mism.forfife.LuaParseTreeUtil.getChildRuleContextRecursive;
+import static org.mism.forfife.LuaParseTreeUtil.getParentStatContext;
+import static org.mism.forfife.LuaParseTreeUtil.hasParentRuleContext;
+import static org.mism.forfife.LuaParseTreeUtil.line;
+import static org.mism.forfife.LuaParseTreeUtil.next;
+import static org.mism.forfife.LuaParseTreeUtil.start;
+import static org.mism.forfife.LuaParseTreeUtil.txt;
+
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +52,7 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.mism.forfife.lua.LuaBaseListener;
+import org.mism.forfife.lua.LuaBaseVisitor;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
@@ -50,19 +60,23 @@ import org.mism.forfife.lua.LuaParser.FuncbodyContext;
 import org.mism.forfife.lua.LuaParser.NamelistContext;
 import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
-
+import org.mism.forfife.visitors.LuaCompletionVisitor;
 /**
- *
+ * Parses a script and tries to collect all relevant data for proposals.
+ * 
  * @author tr1nergy
  */
-class LuaSyntaxAnalyzer {
+class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
-	LuaParser.ChunkContext context;
-	int endIdx;
+	LuaCompletionVisitor[] visitors;
 
-	Stack<Map<String, CompletionInfo>> relevantStack = new Stack<>();
-	Map<String, List<Parameter>> functionParams = new TreeMap<>();
-	Map<String, String> typeMap = new HashMap<String, String>();
+	public LuaSyntaxAnalyzer(LuaCompletionVisitor... visitors) {
+		this.visitors = visitors;
+		for (LuaCompletionVisitor v : visitors)
+		{
+			v.setInfo(this);
+		}
+	}
 
 	/**
 	 * @return a copy of the values in the current state of the stack.
@@ -79,23 +93,6 @@ class LuaSyntaxAnalyzer {
 	}
 
 	/**
-	 * @return the parse tree of the last parsing attempt, may or may not be
-	 *         broken/incomplete. Check the return value of initCompletions
-	 *         before you use this.
-	 */
-	public LuaParser.ChunkContext getContext() {
-		return context;
-	}
-	
-    /**
-     * @return a map containing hints towards types of variables
-     */
-	public Map<String, String> getTypeMap() {
-		return typeMap;
-	}
-
-	/**
-	 * 
 	 * @param luaScript
 	 * @return whether the parsing went well
 	 */
@@ -109,6 +106,9 @@ class LuaSyntaxAnalyzer {
 			LuaParser parser = new LuaParser(tokStr);
 			parser.addParseListener(new LuaListener(info));
 			context = parser.chunk();
+			for (LuaBaseVisitor<?> visitor : visitors) {
+				context.accept(visitor);
+			}
 			return true;
 		} catch (RecognitionException e) {
 			Logging.debug("Parser unhappy with current script state. This is ok."
@@ -121,76 +121,7 @@ class LuaSyntaxAnalyzer {
 		}
 	}
 
-	static <T extends ParserRuleContext> T getParentRuleContext(
-			ParserRuleContext inner, final int ruleIdx, final Class<T> t) {
-		while ((inner = inner.getParent()).getRuleIndex() != ruleIdx) {
-			if (inner.getRuleIndex() == LuaParser.RULE_chunk)
-				throw new IllegalArgumentException(
-						"Reached top of AST, no parent context of type "
-								+ t.getName() + " found. Coding error.");
-		}
-		return t.cast(inner);
-	}
-
-	static boolean hasParentRuleContext(ParserRuleContext inner,
-			final int ruleIdx) {
-		while ((inner = inner.getParent()).getRuleIndex() != ruleIdx) {
-			if (inner.getRuleIndex() == LuaParser.RULE_chunk)
-				return false;
-		}
-		return true;
-	}
-
-	static StatContext getParentStatContext(final ParserRuleContext inner) {
-		return getParentRuleContext(inner, LuaParser.RULE_stat,
-				StatContext.class);
-	}
-
-	static <T extends ParserRuleContext> T getChildRuleContext(
-			final ParserRuleContext parent, final int ruleIdx,
-			final Class<? extends T> t) {
-		for (ParseTree child : parent.children) {
-			if (child instanceof ParserRuleContext
-					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
-				return t.cast(child);
-		}
-		return null;
-	}
-
-	static <T extends ParserRuleContext> T getChildRuleContextRecursive(
-			final ParserRuleContext parent, final Class<? extends T> t,
-			final int... path) {
-		ParserRuleContext childCtx = parent;
-		for (int ruleIdx : path) {
-			childCtx = getChildRuleContext(childCtx, ruleIdx,
-					ParserRuleContext.class);
-			if (childCtx == null) {
-				return null;
-			}
-		}
-		return t.cast(childCtx);
-	}
-
-	static String start(ParserRuleContext ctx) {
-		return ctx.getStart().getText();
-	}
-
-	static String next(ParserRuleContext ctx) {
-		return ctx.getChild(1).getText();
-	}
-
-	static int line(ParserRuleContext ctx) {
-		return ctx.getStart().getLine();
-	}
-
-	static int col(ParserRuleContext ctx) {
-		return ctx.getStart().getCharPositionInLine();
-	}
-
-	static String txt(ParserRuleContext ctx) {
-		return ctx.getText();
-	}
-
+	
 	private class LuaListener extends LuaBaseListener {
 
 		private static final String LEFT_BRACKET = "(";
@@ -324,8 +255,9 @@ class LuaSyntaxAnalyzer {
 							LuaParser.RULE_prefixexp);
 					if (prefixExp != null) {
 						typeMap.put(start(ctx), start(prefixExp));
-						Logging.debug("Found a possible type in line " + line(ctx) + ": var " + start(ctx)
-								+ " = " + start(prefixExp));
+						Logging.debug("Found a possible type in line "
+								+ line(ctx) + ": var " + start(ctx) + " = "
+								+ start(prefixExp));
 					}
 				}
 			}
@@ -387,7 +319,8 @@ class LuaSyntaxAnalyzer {
 
 		private void pushScope(ParserRuleContext ctx) {
 			scopes.push(new TreeMap<>());
-			//Logging.debug("Scope depth in line " + line(ctx) + ", col " + col(ctx) + " now " + scopes.size());
+			// Logging.debug("Scope depth in line " + line(ctx) + ", col " +
+			// col(ctx) + " now " + scopes.size());
 		}
 
 		private void useScope() {
@@ -418,9 +351,5 @@ class LuaSyntaxAnalyzer {
 			Token stop = ctx.getStop();
 			popScope(stop.getStopIndex());
 		}
-	}
-
-	public List<Parameter> getFunctionParams(String functionName) {
-		return functionParams.get(functionName);
 	}
 }

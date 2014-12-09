@@ -9,12 +9,13 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
+import org.mism.forfife.visitors.RequireVisitor;
 
 /**
  *
  * @author tr1nergy
  */
-public class LuaCompletionTests {
+public class LuaSyntaxAnalyzerTest {
 
 	static String toString(Collection<CompletionInfo> completions) {
 		StringBuffer buf = new StringBuffer();
@@ -241,5 +242,14 @@ public class LuaCompletionTests {
 		CaretInfo c= CaretInfo.newInstance(0);
 		an.initCompletions("someVar = SuperClass()", c);
 		assertEquals(an.getTypeMap().get("someVar"), "SuperClass");
+	}
+	
+	@Test
+	public void testIncludes1()
+	{
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer(new RequireVisitor());
+		CaretInfo c=CaretInfo.HOME;
+		an.initCompletions("require \"foo\"", c);
+		assertEquals(1, an.getDependentResources().size());
 	}
 }

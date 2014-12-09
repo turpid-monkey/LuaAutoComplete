@@ -26,6 +26,7 @@
 package org.mism.forfife;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +39,10 @@ import org.fife.ui.autocomplete.FunctionCompletion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.mism.forfife.lua.LuaBaseVisitor;
+import org.mism.forfife.visitors.LuaCompletionVisitor;
+import org.mism.forfife.visitors.RequireVisitor;
+import org.mism.forfife.visitors.UgLoadScriptVisitor;
 
 public class LuaCompletionProvider extends DefaultCompletionProvider {
 	LuaCompletionHandler handler = new LuaCompletionHandler();
@@ -47,6 +52,8 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	String currentScript = "";
 
 	Map<String, String> typeMap = new HashMap<String, String>();
+
+	List<LuaCompletionVisitor> visitors = new ArrayList<LuaCompletionVisitor>();
 
 	public Map<String, String> getTypeMap() {
 		return typeMap;
@@ -58,22 +65,25 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	public LuaCompletionProvider() {
 		setParameterizedCompletionParams('(', ",", ')');
+		setAutoActivationRules(true, ":");
+		fillVisitors(visitors);
 	}
 
 	protected String i18n(Object o) {
 		return o.toString();
 	}
 
-	protected List<Completion> initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
+	protected List<Completion> initDynamicCompletions(
+			Collection<CompletionInfo> infos,
+			Map<String, List<Parameter>> functionParams) {
 		List<Completion> completions = new ArrayList<>();
-		for (CompletionInfo comp : analyzer.getCompletions()) {
+		for (CompletionInfo comp : infos) {
 			switch (comp.getType()) {
 			case FUNCTION:
 				FunctionCompletion fc = new FunctionCompletion(this,
 						comp.getText(), "function");
 				fc.setRelevance(4000);
-				List<Parameter> params = analyzer.getFunctionParams(comp
-						.getText());
+				List<Parameter> params = functionParams.get(comp.getText());
 				fc.setParams(params);
 				completions.add(fc);
 				break;
@@ -85,11 +95,18 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				break;
 			case LANGUAGE:
 				throw new IllegalArgumentException("Not yet supported.");
-				
 
 			}
 		}
 		return completions;
+	}
+
+	// TODO: Pass list as reference
+	// TODO: Provider param information as part of the completion info object
+	protected List<Completion> initDynamicCompletions(LuaSyntaxAnalyzer analyzer) {
+
+		return initDynamicCompletions(analyzer.getCompletions(),
+				analyzer.getFunctionParams());
 	}
 
 	@Override
@@ -103,13 +120,14 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		return super.getCompletions(comp);
 	}
 
-	protected void fillCompletions(List<Completion> completions, String luaScript, CaretInfo info) {
+	protected void fillCompletions(List<Completion> completions,
+			String luaScript, CaretInfo info) {
 		luaScript = luaScript.trim();
 		if (currentScript.equals(luaScript)) {
 			return;
 		}
 		currentScript = luaScript;
-		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
+		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer(new RequireVisitor());
 		if (!analyzer.initCompletions(luaScript, info))
 			return;
 		handler.validChange(analyzer.getContext());
@@ -117,6 +135,12 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		typeMap.putAll(analyzer.getTypeMap());
 		completions.addAll(staticCompletions.getCompletions());
 		completions.addAll(initDynamicCompletions(analyzer));
+	}
+
+	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {
+		visitors.add(new RequireVisitor());
+		// TODO move visitor to UG4LuaAutoComplete project
+		visitors.add(new UgLoadScriptVisitor());
 	}
 
 	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea) {
