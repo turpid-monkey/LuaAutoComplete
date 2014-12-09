@@ -36,7 +36,6 @@ import static org.mism.forfife.LuaParseTreeUtil.txt;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
