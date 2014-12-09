@@ -4,7 +4,7 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 import javax.swing.text.Position;
 
-import org.easymock.EasyMock;
+import static org.easymock.EasyMock.*;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.folding.Fold;
 import org.fife.ui.rsyntaxtextarea.folding.FoldType;
@@ -14,10 +14,10 @@ public class LuaFoldParserTest {
 
 	@Test
 	public void testInitFolds() throws Exception {
-		RSyntaxTextArea textArea = EasyMock.createMock(RSyntaxTextArea.class);
-		Document document = EasyMock.createMock(Document.class);
-		EasyMock.expect(textArea.getDocument()).andReturn(document);
-		EasyMock.expect(document.createPosition(0)).andReturn(new Position() {
+		RSyntaxTextArea textArea = createMock(RSyntaxTextArea.class);
+		Document document = createMock(Document.class);
+		expect(textArea.getDocument()).andReturn(document);
+		expect(document.createPosition(0)).andReturn(new Position() {
 
 			@Override
 			public int getOffset() {
@@ -25,16 +25,16 @@ public class LuaFoldParserTest {
 			}
 
 		});
-		EasyMock.replay(textArea, document);
+		replay(textArea, document);
 		new Fold(FoldType.CODE, textArea, 0);
-		EasyMock.verify(textArea, document);
+		verify(textArea, document);
 	}
 
 	public Fold createDummyFold(int offset) throws BadLocationException {
-		RSyntaxTextArea textArea = EasyMock.createMock(RSyntaxTextArea.class);
-		Document document = EasyMock.createMock(Document.class);
-		EasyMock.expect(textArea.getDocument()).andReturn(document).anyTimes();
-		EasyMock.expect(document.createPosition(offset)).andReturn(
+		RSyntaxTextArea textArea = createMock(RSyntaxTextArea.class);
+		Document document = createMock(Document.class);
+		expect(textArea.getDocument()).andReturn(document).anyTimes();
+		expect(document.createPosition(offset)).andReturn(
 				new Position() {
 
 					@Override
@@ -43,7 +43,7 @@ public class LuaFoldParserTest {
 					}
 
 				}).anyTimes();
-		EasyMock.replay(textArea, document);
+		replay(textArea, document);
 		return new Fold(FoldType.CODE, textArea, offset);
 
 	}
@@ -51,26 +51,26 @@ public class LuaFoldParserTest {
 	@Test
 	public void testGetFolds() throws Exception {
 
-		TextField mock = EasyMock.createMock(TextField.class);
-		EasyMock.expect(mock.getText()).andReturn(
+		TextField mock = createMock(TextField.class);
+		expect(mock.getText()).andReturn(
 				"function test()\n" + "  q=5\n" + "  return q\n" + "end\n"
 						+ "function demo()\n" + "  test = 5\n"
 						+ "  return test\n" + "end\n");
 
-		EasyMock.expect(mock.getLineStartOffset(0)).andReturn(0).times(2);
-		EasyMock.expect(mock.getLineStartOffset(3)).andReturn(12);
-		EasyMock.expect(mock.getLineStartOffset(4)).andReturn(12);
-		EasyMock.expect(mock.getLineStartOffset(7)).andReturn(12);
+		expect(mock.getLineStartOffset(0)).andReturn(0).times(2);
+		expect(mock.getLineStartOffset(3)).andReturn(12);
+		expect(mock.getLineStartOffset(4)).andReturn(12);
+		expect(mock.getLineStartOffset(7)).andReturn(12);
 
-		EasyMock.expect(mock.createFold(0, 13)).andReturn(
+		expect(mock.createFold(0, 13)).andReturn(
 				createDummyFold(12));
-		EasyMock.expect(mock.createFold(0, 25)).andReturn(
+		expect(mock.createFold(0, 25)).andReturn(
 				createDummyFold(12));
 
-		EasyMock.replay(mock);
+		replay(mock);
 		LuaFoldParser fp = new LuaFoldParser();
 		fp.getFolds(mock);
-		EasyMock.verify(mock);
+		verify(mock);
 	}
 
 }

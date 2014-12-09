@@ -27,7 +27,6 @@ package org.mism.forfife.visitors;
 
 import org.mism.forfife.LuaSyntaxInfo;
 import org.mism.forfife.lua.LuaBaseVisitor;
-import static org.mism.forfife.LuaParseTreeUtil.*;
 
 public class LuaCompletionVisitor extends LuaBaseVisitor<Void> {
 	

@@ -245,7 +245,7 @@ public class LuaSyntaxAnalyzerTest {
 	}
 	
 	@Test
-	public void testIncludes1()
+	public void testVisitorParsing()
 	{
 		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer(new RequireVisitor());
 		CaretInfo c=CaretInfo.HOME;

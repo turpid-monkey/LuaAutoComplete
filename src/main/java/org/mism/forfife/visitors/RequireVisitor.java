@@ -41,7 +41,7 @@ public class RequireVisitor extends LuaCompletionVisitor {
 					resourceLink);
 			info.getDependentResources().add(res);
 		}
-		return null;
+		return super.visitFunctioncall(ctx);
 	}
 
 }

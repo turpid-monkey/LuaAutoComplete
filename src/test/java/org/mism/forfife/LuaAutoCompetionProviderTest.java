@@ -1,17 +1,15 @@
 package org.mism.forfife;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
-
-import static org.junit.Assert.*;
-
 import org.junit.Test;
 
 public class LuaAutoCompetionProviderTest {

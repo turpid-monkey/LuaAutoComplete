@@ -39,7 +39,6 @@ import org.fife.ui.autocomplete.FunctionCompletion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
-import org.mism.forfife.lua.LuaBaseVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
 import org.mism.forfife.visitors.UgLoadScriptVisitor;

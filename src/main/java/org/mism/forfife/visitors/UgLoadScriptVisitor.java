@@ -17,7 +17,7 @@ public class UgLoadScriptVisitor extends LuaCompletionVisitor {
 			LuaResource res = new LuaResource(resourceLink);
 			info.getDependentResources().add(res);
 		}
-		return null;
+		return super.visitFunctioncall(ctx);
 	}
 
 }

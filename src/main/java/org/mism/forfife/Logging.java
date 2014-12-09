@@ -113,8 +113,7 @@ final class Logging {
 	}
 
 	/**
-	 * @return You get a hard reference to the logger list used by the logging
-	 *         singleton.
+	 * @return You get a reference to the logger list used by this Logging instance.
 	 */
 	public List<Logger> getLoggers() {
 		return loggers;
