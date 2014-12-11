@@ -25,7 +25,7 @@
  */
 package org.mism.forfife;
 
-public class LuaResource {
+public class LuaResource implements Comparable<LuaResource> {
 
 	String resourceLink;
 
@@ -44,4 +44,17 @@ public class LuaResource {
 	public String toString() {
 		return resourceLink;
 	}
+
+	@Override
+	public int compareTo(LuaResource o) {
+		return resourceLink.compareTo(o.resourceLink);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (obj instanceof LuaResource)
+			return resourceLink.equals(((LuaResource) obj).resourceLink);
+		return false;
+	}
+
 }

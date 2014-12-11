@@ -47,7 +47,7 @@ public class DoxygenVisitor extends LuaCompletionVisitor {
 			StringBuffer doxyBuffer = new StringBuffer();
 			while ((line = in.readLine()) != null) {
 				if (line.startsWith("--!")) {
-					doxyBuffer.append(fixMarkup(line.substring(4).trim()));
+					doxyBuffer.append(fixMarkup(line.substring(3).trim()));
 					doxyBuffer.append("<br>");
 				} else {
 					if (doxyBuffer.length() == 0)
@@ -82,6 +82,5 @@ public class DoxygenVisitor extends LuaCompletionVisitor {
 				.replaceAll("@endcode", "</CODE>")
 				.replaceAll("\\\\sa", "<b>see also</b>")
 				.replaceAll("@sa", "<b>see also</b>");
-
 	}
 }

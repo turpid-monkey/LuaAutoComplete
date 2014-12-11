@@ -67,6 +67,8 @@ public class LuaParseTreeUtil {
 	public static <T extends ParserRuleContext> T getChildRuleContext(
 			final ParserRuleContext parent, final int ruleIdx,
 			final Class<? extends T> t) {
+		if (parent.children == null)
+			return null;
 		for (ParseTree child : parent.children) {
 			if (child instanceof ParserRuleContext
 					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)

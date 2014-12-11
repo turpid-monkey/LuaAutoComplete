@@ -36,6 +36,7 @@ import static org.mism.forfife.LuaParseTreeUtil.txt;
 
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,13 +69,18 @@ import org.mism.forfife.visitors.LuaCompletionVisitor;
  */
 class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
-	LuaCompletionVisitor[] visitors;
+	List<LuaCompletionVisitor> visitors = Collections.emptyList();
+	List<LuaResourceLoader> loaders = Collections.emptyList();
 
-	public LuaSyntaxAnalyzer(LuaCompletionVisitor... visitors) {
-		this.visitors = visitors;
+	public void setVisitors(List<LuaCompletionVisitor> visitors) {
 		for (LuaCompletionVisitor v : visitors) {
 			v.setInfo(this);
 		}
+		this.visitors = visitors;
+	}
+
+	public void setResourceLoaders(List<LuaResourceLoader> loaders) {
+		this.loaders = loaders;
 	}
 
 	/**
@@ -92,8 +98,32 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			LuaParser parser = new LuaParser(tokStr);
 			parser.addParseListener(new LuaListener(info));
 			context = parser.chunk();
-			for (LuaBaseVisitor<?> visitor : visitors) {
+			for (LuaCompletionVisitor visitor : visitors) {
 				context.accept(visitor);
+			}
+			for (LuaResource res : dependentResources) {
+				if (hasResourceCached(res))
+					continue;
+				for (LuaResourceLoader loader : loaders) {
+					if (loader.canLoad(res)) {
+						try {
+							Logging.debug("Loading included file "
+									+ res.getResourceLink());
+							String include = loader.load(res);
+							LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer();
+							nested.setResource(res);
+							nested.setParent(this);
+							nested.setVisitors(visitors);
+							nested.setResourceLoaders(loaders);
+							dependentResourceCache.put(res, nested);
+							nested.initCompletions(include, CaretInfo.HOME);
+						} catch (Exception e) {
+							Logging.error(
+									"Could not load resource "
+											+ res.getResourceLink(), e);
+						}
+					}
+				}
 			}
 			return true;
 		} catch (RecognitionException e) {

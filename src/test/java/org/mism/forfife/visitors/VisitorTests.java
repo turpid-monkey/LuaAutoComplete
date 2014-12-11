@@ -22,19 +22,6 @@ public class VisitorTests {
 	}
 
 	@Test
-	public void testUgLoadVisitor() throws Exception {
-		ChunkContext ctx = LuaParseTreeUtil
-				.parse("ug_load_script(\"ug_util.lua\")");
-		LuaSyntaxInfo info = new LuaSyntaxInfo();
-		UgLoadScriptVisitor visitor = new UgLoadScriptVisitor();
-		visitor.setInfo(info);
-		visitor.visit(ctx);
-		assertEquals(1, info.getDependentResources().size());
-		assertEquals("ug:ug_util.lua", info.getDependentResources().iterator()
-				.next().getResourceLink());
-	}
-
-	@Test
 	public void readDoxyGen() throws Exception {
 		String script = "--! Some Comment\nfunction test()\n return 0\nend\n";
 		ChunkContext ctx = LuaParseTreeUtil.parse(script);

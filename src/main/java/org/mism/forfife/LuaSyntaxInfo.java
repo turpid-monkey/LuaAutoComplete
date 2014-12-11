@@ -39,6 +39,8 @@ import org.mism.forfife.lua.LuaParser;
 
 public class LuaSyntaxInfo {
 
+	protected LuaResource resource;
+	protected LuaSyntaxInfo parent;
 	protected String luaScript;
 	protected LuaParser.ChunkContext context;
 	protected int endIdx;
@@ -49,13 +51,34 @@ public class LuaSyntaxInfo {
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
 	protected Set<LuaResource> dependentResources = new HashSet<>();
+	protected Map<LuaResource, LuaSyntaxInfo> dependentResourceCache = new HashMap<>();
 
 	public String getLuaScript() {
 		return luaScript;
 	}
 
+	public void setResource(LuaResource res) {
+		this.resource = res;
+	}
+
 	public Map<String, String> getDoxyGenMap() {
 		return doxyGenMap;
+	}
+
+	public void setParent(LuaSyntaxInfo parent) {
+		this.parent = parent;
+	}
+
+	public LuaSyntaxInfo getParent() {
+		return parent;
+	}
+
+	public boolean hasResourceCached(LuaResource res) {
+		if (dependentResourceCache.containsKey(res) || res.equals(resource))
+			return true;
+		if (parent == null)
+			return false;
+		return parent.hasResourceCached(res);
 	}
 
 	public void setLuaScript(String luaScript) {
@@ -115,6 +138,15 @@ public class LuaSyntaxInfo {
 		this.dependentResources = dependentResources;
 	}
 
+	public Map<LuaResource, LuaSyntaxInfo> getDependentResourceCache() {
+		return dependentResourceCache;
+	}
+
+	public void setDependentResourceCache(
+			Map<LuaResource, LuaSyntaxInfo> dependentResourceCache) {
+		this.dependentResourceCache = dependentResourceCache;
+	}
+
 	/**
 	 * @return a copy of the values in the current state of the stack.
 	 */
@@ -127,5 +159,9 @@ public class LuaSyntaxInfo {
 			}
 		}
 		return map.values();
+	}
+
+	public LuaResource getResource() {
+		return resource;
 	}
 }

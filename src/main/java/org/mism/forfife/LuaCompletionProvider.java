@@ -42,7 +42,6 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.mism.forfife.visitors.DoxygenVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
-import org.mism.forfife.visitors.UgLoadScriptVisitor;
 
 public class LuaCompletionProvider extends DefaultCompletionProvider {
 	LuaCompletionHandler handler = new LuaCompletionHandler();
@@ -54,6 +53,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	Map<String, String> typeMap = new HashMap<String, String>();
 
 	List<LuaCompletionVisitor> visitors = new ArrayList<LuaCompletionVisitor>();
+	List<LuaResourceLoader> loaders = new ArrayList<LuaResourceLoader>();
 
 	public Map<String, String> getTypeMap() {
 		return typeMap;
@@ -67,6 +67,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		setParameterizedCompletionParams('(', ",", ')');
 		setAutoActivationRules(true, ":");
 		fillVisitors(visitors);
+		fillResourceLoaders(loaders);
 	}
 
 	protected String i18n(Object o) {
@@ -131,8 +132,9 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			return;
 		}
 		currentScript = luaScript;
-		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer(
-				visitors.toArray(new LuaCompletionVisitor[visitors.size()]));
+		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
+		analyzer.setVisitors(visitors);
+		analyzer.setResourceLoaders(loaders);
 		if (!analyzer.initCompletions(luaScript, info))
 			return;
 		handler.validChange(analyzer.getContext());
@@ -145,8 +147,10 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {
 		visitors.add(new RequireVisitor());
 		visitors.add(new DoxygenVisitor());
-		// TODO move visitor to UG4LuaAutoComplete project
-		visitors.add(new UgLoadScriptVisitor());
+	}
+
+	protected void fillResourceLoaders(List<LuaResourceLoader> loaders) {
+		
 	}
 
 	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea) {

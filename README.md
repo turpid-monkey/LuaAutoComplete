@@ -12,6 +12,8 @@ This project is part of an IDE for the UG4 shell created by the Goethe Center of
 
 Special thanks go to Michael Hoffer, who supervised the creation of this project. Check out his great projects here https://github.com/miho.
 
+Major credits go to Martin Rupp for his contributions to this project.
+
 ----------------------
 
 License
