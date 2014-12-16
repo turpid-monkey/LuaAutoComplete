@@ -232,20 +232,17 @@ public class StaticLuaCompletions {
 			{ "PC", "os.tmpname", "os.tmpname()", "file" },
 			{ "BC", "breakpoint()", "add breakpoint",
 					"add a ug4 LUA breakpoint at this line" } };
-	
-	public StaticLuaCompletions(CompletionProvider provider)
-	{
+
+	public StaticLuaCompletions(CompletionProvider provider) {
 		this.provider = provider;
 	}
-	
+
 	CompletionProvider provider;
-	List<Completion> completionBuffer = new ArrayList<>();
+	List<Completion> completionBuffer = new ArrayList<Completion>();
 	boolean init = false;
-	
-	public List<Completion> getCompletions()
-	{
-		if(!init)
-		{
+
+	public List<Completion> getCompletions() {
+		if (!init) {
 			addCompletions(completionBuffer, provider, completionsTable);
 			init = true;
 		}
@@ -254,8 +251,8 @@ public class StaticLuaCompletions {
 
 	public void addCompletion(List<Completion> completions,
 			CompletionProvider provider, String[] row) {
-		switch (row[0]) {
-		case "BC":
+		String prefix = row[0];
+		if ("BC".equals(prefix)) {
 			if (row.length != 4)
 				throw new IllegalArgumentException(
 						"Needs BC <repltext> <short-descr> <summary>"
@@ -264,18 +261,17 @@ public class StaticLuaCompletions {
 					row[3]);
 			bc.setRelevance(500);
 			completions.add(bc);
-			break;
-		case "SH":
+		} else if ("SH".equals(prefix)) {
+
 			if (row.length != 4)
 				throw new IllegalArgumentException(
 						"Needs SH <short-cut> <repltext> <short-descr>: "
 								+ Arrays.toString(row));
-			ShorthandCompletion sc = new ShorthandCompletion(provider, row[1], row[2],
-					row[3]);
+			ShorthandCompletion sc = new ShorthandCompletion(provider, row[1],
+					row[2], row[3]);
 			sc.setRelevance(500);
 			completions.add(sc);
-			break;
-		case "PC":
+		} else if ("PC".equals(prefix)) {
 			if (row.length < 4)
 				throw new IllegalArgumentException(
 						"Needs PC <function> <summary> <ret> (<param>)?"
@@ -283,15 +279,15 @@ public class StaticLuaCompletions {
 			FunctionCompletion fc = new FunctionCompletion(provider, row[1],
 					row[3]);
 			fc.setShortDescription(row[2]);
-			List<Parameter> params = new ArrayList<>();
+			List<Parameter> params = new ArrayList<Parameter>();
 			for (int i = 4; i < row.length; i++) {
 				params.add(new Parameter(null, row[i]));
 			}
 			fc.setParams(params);
 			fc.setRelevance(1000);
 			completions.add(fc);
-			break;
 		}
+
 	}
 
 	public void addCompletions(List<Completion> completions,

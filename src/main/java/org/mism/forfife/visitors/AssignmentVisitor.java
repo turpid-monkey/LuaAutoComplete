@@ -25,23 +25,29 @@
  */
 package org.mism.forfife.visitors;
 
-import static org.mism.forfife.LuaParseTreeUtil.next;
+import static org.mism.forfife.LuaParseTreeUtil.line;
 import static org.mism.forfife.LuaParseTreeUtil.start;
 
-import org.mism.forfife.LuaResource;
-import org.mism.forfife.lua.LuaParser.FunctioncallContext;
+import org.mism.forfife.Logging;
+import org.mism.forfife.LuaParseTreeUtil;
+import org.mism.forfife.lua.LuaParser;
+import org.mism.forfife.lua.LuaParser.PrefixexpContext;
+import org.mism.forfife.lua.LuaParser.StatContext;
 
-public class RequireVisitor extends LuaCompletionVisitor {
+public class AssignmentVisitor extends LuaCompletionVisitor {
 
 	@Override
-	public Void visitFunctioncall(FunctioncallContext ctx) {
-		if (start(ctx).equals("require")) {
-			String resourceLink = "require:" + next(ctx).replace("\"", "").trim();
-			LuaResource res = new LuaResource(
-					resourceLink);
-			info.getIncludedResources().add(res);
+	public Void visitPrefixexp(PrefixexpContext ctx) {
+		StatContext statCtx = LuaParseTreeUtil.getParentRuleContext(ctx,
+				LuaParser.RULE_stat, StatContext.class);
+		if (statCtx.getChildCount() == 3) {
+			if (statCtx.getChild(1).getText().equals("=")) {
+				info.getTypeMap().put(start(statCtx), start(ctx));
+				Logging.debug("Found a possible type in line " + line(ctx)
+						+ ": var " + start(statCtx) + " = " + start(ctx));
+			}
 		}
-		return super.visitFunctioncall(ctx);
+		return null;
 	}
 
 }

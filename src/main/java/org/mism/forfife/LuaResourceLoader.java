@@ -2,7 +2,11 @@ package org.mism.forfife;
 
 public interface LuaResourceLoader {
 	
-	boolean canLoad(LuaResource res);
-	String load(LuaResource res) throws Exception;
+	void setResource(LuaResource resource);
+	LuaResource getResource();
+	
+	boolean canLoad();
+	String load() throws Exception;
+	boolean hasModifications();
 
 }

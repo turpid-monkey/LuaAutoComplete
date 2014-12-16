@@ -35,7 +35,7 @@ import org.mism.forfife.lua.LuaParser;
  */
 public class LuaCompletionHandler implements LuaCompletionListener {
     
-    List<LuaCompletionListener> listeners = new ArrayList<>();
+    List<LuaCompletionListener> listeners = new ArrayList<LuaCompletionListener>();
 
     @Override
     public void validChange(LuaParser.ChunkContext lua) {

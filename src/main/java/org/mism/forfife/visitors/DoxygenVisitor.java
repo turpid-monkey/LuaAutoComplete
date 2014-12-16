@@ -40,9 +40,9 @@ public class DoxygenVisitor extends LuaCompletionVisitor {
 
 	@Override
 	public Void visitChunk(ChunkContext ctx) {
-		String script = info.getLuaScript();
-		BufferedReader in = new BufferedReader(new StringReader(script));
 		try {
+			String script = info.getLuaScript();
+			BufferedReader in = new BufferedReader(new StringReader(script));
 			String line;
 			StringBuffer doxyBuffer = new StringBuffer();
 			while ((line = in.readLine()) != null) {

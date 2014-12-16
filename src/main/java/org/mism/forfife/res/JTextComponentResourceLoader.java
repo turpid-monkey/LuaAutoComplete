@@ -23,25 +23,57 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.mism.forfife.visitors;
+package org.mism.forfife.res;
 
-import static org.mism.forfife.LuaParseTreeUtil.next;
-import static org.mism.forfife.LuaParseTreeUtil.start;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.swing.text.JTextComponent;
 
 import org.mism.forfife.LuaResource;
-import org.mism.forfife.lua.LuaParser.FunctioncallContext;
+import org.mism.forfife.LuaResourceLoader;
 
-public class RequireVisitor extends LuaCompletionVisitor {
+public class JTextComponentResourceLoader implements LuaResourceLoader {
 
-	@Override
-	public Void visitFunctioncall(FunctioncallContext ctx) {
-		if (start(ctx).equals("require")) {
-			String resourceLink = "require:" + next(ctx).replace("\"", "").trim();
-			LuaResource res = new LuaResource(
-					resourceLink);
-			info.getIncludedResources().add(res);
-		}
-		return super.visitFunctioncall(ctx);
+	static List<JTextComponent> TEXT_AREAS = new ArrayList<JTextComponent>();
+
+	public static List<JTextComponent> getTextAreas() {
+		return TEXT_AREAS;
 	}
 
+	JTextComponent textArea;
+	String cache;
+	LuaResource res;
+
+	@Override
+	public boolean hasModifications() {
+		return !getTextArea().getText().equals(cache);
+	}
+
+	@Override
+	public boolean canLoad() {
+		return res.getResourceLink().startsWith("textArea:");
+	}
+
+	@Override
+	public String load() throws Exception {
+		return getTextArea().getText();
+	}
+
+	@Override
+	public void setResource(LuaResource resource) {
+		res = resource;
+	}
+	
+	@Override
+	public LuaResource getResource() {
+		return res;
+	}
+	
+	
+	private JTextComponent getTextArea()
+	{
+		return TEXT_AREAS.iterator().next();
+	}
+	
 }

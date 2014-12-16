@@ -23,25 +23,40 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.mism.forfife.visitors;
+package org.mism.forfife;
 
-import static org.mism.forfife.LuaParseTreeUtil.next;
-import static org.mism.forfife.LuaParseTreeUtil.start;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-import org.mism.forfife.LuaResource;
-import org.mism.forfife.lua.LuaParser.FunctioncallContext;
+public class LuaResourceLoaderFactory {
 
-public class RequireVisitor extends LuaCompletionVisitor {
+	List<Class<? extends LuaResourceLoader>> loaders = new ArrayList<Class<? extends LuaResourceLoader>>();
 
-	@Override
-	public Void visitFunctioncall(FunctioncallContext ctx) {
-		if (start(ctx).equals("require")) {
-			String resourceLink = "require:" + next(ctx).replace("\"", "").trim();
-			LuaResource res = new LuaResource(
-					resourceLink);
-			info.getIncludedResources().add(res);
+	public LuaResourceLoaderFactory(
+			Class<? extends LuaResourceLoader>... loaders) {
+		this.loaders.addAll(Arrays.asList(loaders));
+	}
+	
+	public LuaResourceLoaderFactory()
+	{
+		
+	}
+
+	public List<Class<? extends LuaResourceLoader>> getLoaders() {
+		return loaders;
+	}
+
+	public LuaResourceLoader createLoader(LuaResource res) throws Exception {
+		for (Class<? extends LuaResourceLoader> loader : loaders) {
+			LuaResourceLoader clone = loader.newInstance();
+			clone.setResource(res);
+			if (clone.canLoad()) {
+				return new CachedResourceLoader(clone, res);
+			}
 		}
-		return super.visitFunctioncall(ctx);
+		throw new FileNotFoundException(res.getResourceLink());
 	}
 
 }

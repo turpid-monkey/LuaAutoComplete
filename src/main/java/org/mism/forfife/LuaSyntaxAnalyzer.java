@@ -26,7 +26,6 @@
 package org.mism.forfife;
 
 import static org.mism.forfife.LuaParseTreeUtil.col;
-import static org.mism.forfife.LuaParseTreeUtil.getChildRuleContextRecursive;
 import static org.mism.forfife.LuaParseTreeUtil.getParentStatContext;
 import static org.mism.forfife.LuaParseTreeUtil.hasParentRuleContext;
 import static org.mism.forfife.LuaParseTreeUtil.line;
@@ -52,13 +51,11 @@ import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.mism.forfife.lua.LuaBaseListener;
-import org.mism.forfife.lua.LuaBaseVisitor;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
 import org.mism.forfife.lua.LuaParser.FuncbodyContext;
 import org.mism.forfife.lua.LuaParser.NamelistContext;
-import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 
@@ -69,8 +66,9 @@ import org.mism.forfife.visitors.LuaCompletionVisitor;
  */
 class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
+	boolean ok;
+
 	List<LuaCompletionVisitor> visitors = Collections.emptyList();
-	List<LuaResourceLoader> loaders = Collections.emptyList();
 
 	public void setVisitors(List<LuaCompletionVisitor> visitors) {
 		for (LuaCompletionVisitor v : visitors) {
@@ -79,62 +77,72 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		this.visitors = visitors;
 	}
 
-	public void setResourceLoaders(List<LuaResourceLoader> loaders) {
-		this.loaders = loaders;
+	public LuaSyntaxAnalyzer() {
+		// root
+	}
+
+	public LuaSyntaxAnalyzer(LuaSyntaxAnalyzer parent, LuaResource res)
+			throws Exception {
+		setParent(parent);
+		setVisitors(parent.visitors);
+		setResourceLoaderFactory(parent.factory);
+		setResource(res);
 	}
 
 	/**
 	 * @param luaScript
 	 * @return whether the parsing went well
 	 */
-	public boolean initCompletions(String luaScript, CaretInfo info) {
-		try {
-			this.luaScript = luaScript;
-			endIdx = luaScript.trim().length() - 1;
-			ANTLRInputStream str = new ANTLRInputStream(new StringReader(
-					luaScript));
-			Lexer lx = new LuaLexer(str);
-			CommonTokenStream tokStr = new CommonTokenStream(lx);
-			LuaParser parser = new LuaParser(tokStr);
-			parser.addParseListener(new LuaListener(info));
-			context = parser.chunk();
-			for (LuaCompletionVisitor visitor : visitors) {
-				context.accept(visitor);
-			}
-			for (LuaResource res : dependentResources) {
-				if (hasResourceCached(res))
-					continue;
-				for (LuaResourceLoader loader : loaders) {
-					if (loader.canLoad(res)) {
+	public boolean initCompletions(CaretInfo info) {
+		if (loader.hasModifications() || !ok) {
+			try {
+				String luaScript = getLuaScript();
+				endIdx = luaScript.trim().length() - 1;
+				ANTLRInputStream str = new ANTLRInputStream(new StringReader(
+						luaScript));
+				Lexer lx = new LuaLexer(str);
+				CommonTokenStream tokStr = new CommonTokenStream(lx);
+				LuaParser parser = new LuaParser(tokStr);
+				parser.addParseListener(new LuaListener(info));
+				context = parser.chunk();
+				for (LuaCompletionVisitor visitor : visitors) {
+					context.accept(visitor);
+				}
+				for (LuaResource res : includedResources) {
+					if (!loadedIncludes.containsKey(res)) {
+						if (hasIncludeLoadedRecursive(res))
+							continue;
 						try {
 							Logging.debug("Loading included file "
 									+ res.getResourceLink());
-							String include = loader.load(res);
-							LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer();
-							nested.setResource(res);
-							nested.setParent(this);
-							nested.setVisitors(visitors);
-							nested.setResourceLoaders(loaders);
-							dependentResourceCache.put(res, nested);
-							nested.initCompletions(include, CaretInfo.HOME);
+							LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer(
+									this, res);
+
+							loadedIncludes.put(res, nested);
 						} catch (Exception e) {
 							Logging.error(
 									"Could not load resource "
 											+ res.getResourceLink(), e);
 						}
 					}
+					((LuaSyntaxAnalyzer) loadedIncludes.get(res))
+							.initCompletions(info);
+
 				}
+
+				return ok = true;
+			} catch (RecognitionException e) {
+				Logging.debug("Parser unhappy with current script state. This is ok."
+						+ e.getMessage());
+				return ok = false;
+			} catch (Exception e) {
+				Logging.error(
+						"Bad code in completion-creation code, this is not ok.",
+						e);
+				return ok = false;
 			}
-			return true;
-		} catch (RecognitionException e) {
-			Logging.debug("Parser unhappy with current script state. This is ok."
-					+ e.getMessage());
-			return false;
-		} catch (Exception e) {
-			Logging.error(
-					"Bad code in completion-creation code, this is not ok.", e);
-			return false;
 		}
+		return true;
 	}
 
 	private class LuaListener extends LuaBaseListener {
@@ -143,11 +151,10 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		private static final String FUNCTION = "function";
 		private static final String LOCAL = "local";
 		private static final String FOR = "for";
-		private static final String ASSIGN = "=";
 
 		CaretInfo info;
 		boolean frozen = false;
-		Stack<Map<String, CompletionInfo>> scopes = new Stack<>();
+		Stack<Map<String, CompletionInfo>> scopes = new Stack<Map<String, CompletionInfo>>();
 		Map<String, CompletionInfo> global = new HashMap<String, CompletionInfo>();
 
 		LuaListener(CaretInfo info) {
@@ -182,8 +189,9 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
 		void addVariable(String name, ParserRuleContext ctx, boolean local) {
 
-			CompletionInfo varInfo = CompletionInfo.newVariableInstance(name,
-					line(ctx), col(ctx), local);
+			CompletionInfo varInfo = CompletionInfo.newVariableInstance(
+					LuaSyntaxAnalyzer.this.getResource(), name, line(ctx),
+					col(ctx), local);
 			if (local || isDeclaredLocal(name)) {
 				scopes.peek().put(name, varInfo);
 			} else {
@@ -192,8 +200,9 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		}
 
 		void addFunction(String name, ParserRuleContext ctx, boolean local) {
-			CompletionInfo funcInfo = CompletionInfo.newFunctionInstance(name,
-					line(ctx), col(ctx), local);
+			CompletionInfo funcInfo = CompletionInfo.newFunctionInstance(
+					LuaSyntaxAnalyzer.this.getResource(), name, line(ctx),
+					col(ctx), local);
 			if (local) {
 				scopes.peek().put(name, funcInfo);
 			} else {
@@ -246,34 +255,16 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		public void exitStat(StatContext ctx) {
 			String startText = start(ctx);
 
-			switch (startText) {
-			case FOR:
+			if (FOR.equals(startText)) {
 				ParseTree t = ctx.getChild(1);
 				if (t.getChildCount() == 0) // single var decl
 				{
 					addVariable(next(ctx), ctx, true);
 				} // else should be a namelist => handled by exitNamelist()
-				break;
-			case LOCAL:
+			} else if (LOCAL.equals(startText)) {
 				if (ctx.getChild(1).getText().equals(FUNCTION)) {
 					String localFunction = ctx.getChild(2).getText();
 					addFunction(localFunction, ctx, true);
-				}
-
-				break;
-			}
-			if (ctx.getChildCount() == 3) {
-				if (ctx.getChild(1).getText().equals(ASSIGN)) {
-					PrefixexpContext prefixExp = getChildRuleContextRecursive(
-							ctx, PrefixexpContext.class,
-							LuaParser.RULE_explist, LuaParser.RULE_exp,
-							LuaParser.RULE_prefixexp);
-					if (prefixExp != null) {
-						typeMap.put(start(ctx), start(prefixExp));
-						Logging.debug("Found a possible type in line "
-								+ line(ctx) + ": var " + start(ctx) + " = "
-								+ start(prefixExp));
-					}
 				}
 			}
 		}
@@ -284,14 +275,11 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			String startText = statCtx.getStart().getText();
 			String currentFunction;
 			boolean anonFunction = false;
-			switch (startText) {
-			case FUNCTION:
+			if (FUNCTION.equals(startText)) {
 				currentFunction = next(statCtx);
-				break;
-			case LOCAL:
+			} else if (LOCAL.equals(startText)) {
 				currentFunction = statCtx.getChild(2).getText();
-				break;
-			default:
+			} else {
 				currentFunction = startText;
 				anonFunction = true;
 			}
@@ -303,8 +291,9 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 							+ currentFunction + "' to a function.");
 					// var declaration in parent scope needs to be replaced.
 					replaceCompletionInfoRecursive(CompletionInfo
-							.newFunctionInstance(currentFunction, line(ctx),
-									col(ctx), false));
+							.newFunctionInstance(
+									LuaSyntaxAnalyzer.this.getResource(),
+									currentFunction, line(ctx), col(ctx), false));
 				} catch (NullPointerException e) {
 					Logging.error("Unknown type of anonymous function def, or some completely different construct.");
 				}
@@ -318,7 +307,7 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 							// we have a function parameter list!
 							ParseTree t = ctx.getChild(1).getChild(0);
 							int childCount = t.getChildCount();
-							List<Parameter> params = new ArrayList<>();
+							List<Parameter> params = new ArrayList<Parameter>();
 							functionParams.put(currentFunction, params);
 							for (int i = 0; i < childCount; i += 2) {
 								ParseTree nt = t.getChild(i);
@@ -333,13 +322,13 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		}
 
 		private void pushScope(ParserRuleContext ctx) {
-			scopes.push(new TreeMap<>());
+			scopes.push(new TreeMap<String, CompletionInfo>());
 			// Logging.debug("Scope depth in line " + line(ctx) + ", col " +
 			// col(ctx) + " now " + scopes.size());
 		}
 
 		private void useScope() {
-			relevantStack = new Stack<>();
+			relevantStack = new Stack<Map<String, CompletionInfo>>();
 			relevantStack.add(global);
 			relevantStack.addAll(scopes);
 			Logging.debug("Relevant scope identified as " + relevantStack);

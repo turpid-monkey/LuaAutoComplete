@@ -30,7 +30,7 @@ public class LuaFoldParserTest {
 		verify(textArea, document);
 	}
 
-	public Fold createDummyFold(int offset) throws BadLocationException {
+	public Fold createDummyFold(final int offset) throws BadLocationException {
 		RSyntaxTextArea textArea = createMock(RSyntaxTextArea.class);
 		Document document = createMock(Document.class);
 		expect(textArea.getDocument()).andReturn(document).anyTimes();

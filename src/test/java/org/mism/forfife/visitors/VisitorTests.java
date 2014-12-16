@@ -4,7 +4,10 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 import org.mism.forfife.LuaParseTreeUtil;
+import org.mism.forfife.LuaResource;
+import org.mism.forfife.LuaResourceLoaderFactory;
 import org.mism.forfife.LuaSyntaxInfo;
+import org.mism.forfife.TextResourceLoader;
 import org.mism.forfife.lua.LuaParser.ChunkContext;
 
 public class VisitorTests {
@@ -16,8 +19,8 @@ public class VisitorTests {
 		RequireVisitor visitor = new RequireVisitor();
 		visitor.setInfo(info);
 		visitor.visit(ctx);
-		assertEquals(1, info.getDependentResources().size());
-		assertEquals("require:foo", info.getDependentResources().iterator()
+		assertEquals(1, info.getIncludedResources().size());
+		assertEquals("require:foo", info.getIncludedResources().iterator()
 				.next().getResourceLink());
 	}
 
@@ -26,23 +29,29 @@ public class VisitorTests {
 		String script = "--! Some Comment\nfunction test()\n return 0\nend\n";
 		ChunkContext ctx = LuaParseTreeUtil.parse(script);
 		LuaSyntaxInfo info = new LuaSyntaxInfo();
-		info.setLuaScript(script);
+		info.setResourceLoaderFactory(new LuaResourceLoaderFactory(
+				TextResourceLoader.class));
+		info.setResource(new LuaResource("txt:" + script));
 		DoxygenVisitor visitor = new DoxygenVisitor();
 		visitor.setInfo(info);
 		visitor.visit(ctx);
 		assertEquals("Some Comment<br>", info.getDoxyGenMap().get("test"));
 	}
-	
+
 	@Test
 	public void readDoxyGenMarkup() throws Exception {
 		String script = "--! Some Comment\n--! @param none\nfunction test()\n return 0\nend\n";
 		ChunkContext ctx = LuaParseTreeUtil.parse(script);
 		LuaSyntaxInfo info = new LuaSyntaxInfo();
-		info.setLuaScript(script);
+
+		info.setResourceLoaderFactory(new LuaResourceLoaderFactory(
+				TextResourceLoader.class));
+		info.setResource(new LuaResource("txt:" + script));
 		DoxygenVisitor visitor = new DoxygenVisitor();
 		visitor.setInfo(info);
 		visitor.visit(ctx);
-		assertEquals("Some Comment<br><b>param</b> none<br>", info.getDoxyGenMap().get("test"));
+		assertEquals("Some Comment<br><b>param</b> none<br>", info
+				.getDoxyGenMap().get("test"));
 	}
 
 	@Test
@@ -54,12 +63,28 @@ public class VisitorTests {
 		}
 		ChunkContext ctx = LuaParseTreeUtil.parse(script);
 		LuaSyntaxInfo info = new LuaSyntaxInfo();
-		info.setLuaScript(luaScript.toString());
+
+		info.setResourceLoaderFactory(new LuaResourceLoaderFactory(
+				TextResourceLoader.class));
+		info.setResource(new LuaResource("txt:" + luaScript));
 		DoxygenVisitor visitor = new DoxygenVisitor();
 		visitor.setInfo(info);
 		visitor.visit(ctx);
-		assertEquals("Some Comment for 1<br>", info.getDoxyGenMap().get("test1"));
-		assertEquals("Some Comment for 9<br>", info.getDoxyGenMap().get("test9"));
+		assertEquals("Some Comment for 1<br>", info.getDoxyGenMap()
+				.get("test1"));
+		assertEquals("Some Comment for 9<br>", info.getDoxyGenMap()
+				.get("test9"));
+	}
+
+	@Test
+	public void assignment() throws Exception {
+		String script = "someVar = SomeClass()";
+		ChunkContext ctx = LuaParseTreeUtil.parse(script);
+		LuaSyntaxInfo info = new LuaSyntaxInfo();
+		AssignmentVisitor visitor = new AssignmentVisitor();
+		visitor.setInfo(info);
+		visitor.visit(ctx);
+		assertEquals("SomeClass", info.getTypeMap().get("someVar"));
 	}
 
 }

@@ -23,25 +23,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.mism.forfife.visitors;
+package org.mism.forfife;
 
-import static org.mism.forfife.LuaParseTreeUtil.next;
-import static org.mism.forfife.LuaParseTreeUtil.start;
+public class CachedResourceLoader implements LuaResourceLoader {
 
-import org.mism.forfife.LuaResource;
-import org.mism.forfife.lua.LuaParser.FunctioncallContext;
+	private LuaResourceLoader loader;
 
-public class RequireVisitor extends LuaCompletionVisitor {
+	private String cache;
+
+	public CachedResourceLoader(LuaResourceLoader loader, LuaResource res) {
+		this.loader = loader;
+	}
+
+	public String refresh() throws Exception {
+		if (cache == null || loader.hasModifications()) {
+			cache = loader.load();
+		} else {
+			Logging.debug("Using cache for resource " + loader.getResource());
+		}
+		return cache;
+	}
 
 	@Override
-	public Void visitFunctioncall(FunctioncallContext ctx) {
-		if (start(ctx).equals("require")) {
-			String resourceLink = "require:" + next(ctx).replace("\"", "").trim();
-			LuaResource res = new LuaResource(
-					resourceLink);
-			info.getIncludedResources().add(res);
-		}
-		return super.visitFunctioncall(ctx);
+	public void setResource(LuaResource resource) {
+		loader.setResource(resource);
+	}
+
+	@Override
+	public LuaResource getResource() {
+		return loader.getResource();
+	}
+
+	@Override
+	public boolean canLoad() {
+		return loader.canLoad();
+	}
+
+	@Override
+	public String load() throws Exception {
+		return refresh();
+	}
+
+	@Override
+	public boolean hasModifications() {
+		return loader.hasModifications();
 	}
 
 }

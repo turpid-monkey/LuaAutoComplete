@@ -18,10 +18,10 @@ public class LuaAutoCompetionProviderTest {
 	@Test
 	public void testCreateCompletions() {
 		LuaCompletionProvider prov = new LuaCompletionProvider();
-		List<CompletionInfo> infos = new ArrayList<>();
-		infos.add(CompletionInfo.newFunctionInstance("function", 1, 1, true));
-		infos.add(CompletionInfo.newVariableInstance("var", 2, 2, false));
-		Map<String, List<Parameter>> params = new HashMap<>();
+		List<CompletionInfo> infos = new ArrayList<CompletionInfo>();
+		infos.add(CompletionInfo.newFunctionInstance(new LuaResource("test"),"function", 1, 1, true));
+		infos.add(CompletionInfo.newVariableInstance(new LuaResource("test"),"var", 2, 2, false));
+		Map<String, List<Parameter>> params = new HashMap<String, List<Parameter>>();
 		params.put("function", Arrays.asList(new Parameter("string", "param1")));
 
 		Map<String, String> functionDescr = new HashMap<String, String>();
@@ -34,7 +34,7 @@ public class LuaAutoCompetionProviderTest {
 
 		FunctionCompletion fc = (FunctionCompletion) comps.get(0);
 		assertEquals(1, fc.getParamCount());
-		assertEquals("<p>Some Info", fc.getShortDescription());
+		assertEquals("<p>Some Info<p>included from test, line 1", fc.getShortDescription());
 
 	}
 

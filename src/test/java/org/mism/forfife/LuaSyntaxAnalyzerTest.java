@@ -10,6 +10,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.junit.Test;
+import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
 
 /**
@@ -17,6 +18,58 @@ import org.mism.forfife.visitors.RequireVisitor;
  * @author tr1nergy
  */
 public class LuaSyntaxAnalyzerTest {
+
+	static class TestRequireResourceLoader implements LuaResourceLoader {
+
+		LuaResource resource;
+
+		@Override
+		public void setResource(LuaResource resource) {
+			this.resource = resource;
+		}
+		
+		@Override
+		public LuaResource getResource() {
+			return resource;
+		}
+
+		@Override
+		public boolean canLoad() {
+			return resource.getResourceLink().startsWith("require:");
+		}
+
+		@Override
+		public String load() throws Exception {
+			return "require \"" + resource.getResourceLink().substring(8)
+					+ "\"";
+		}
+
+		@Override
+		public boolean hasModifications() {
+			return false;
+		}
+	}
+
+	public static LuaSyntaxAnalyzer createTestAnalyzer(String script,
+			CaretInfo info, LuaCompletionVisitor... visitors) throws Exception {
+		LuaResourceLoaderFactory factory = new LuaResourceLoaderFactory(
+				TextResourceLoader.class,
+				LuaSyntaxAnalyzerTest.TestRequireResourceLoader.class);
+		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+		an.setResourceLoaderFactory(factory);
+		an.setResource(new LuaResource("txt:" + script));
+		List<LuaCompletionVisitor> visitorList = new ArrayList<LuaCompletionVisitor>();
+		visitorList.addAll(Arrays.asList(visitors));
+		an.setVisitors(visitorList);
+		return an;
+	}
+
+	public static LuaSyntaxAnalyzer createAndRunTestAnalyzer(String script,
+			CaretInfo info, LuaCompletionVisitor... visitors) throws Exception {
+		LuaSyntaxAnalyzer an = createTestAnalyzer(script, info, visitors);
+		an.initCompletions(info);
+		return an;
+	}
 
 	static String toString(Collection<CompletionInfo> completions) {
 		StringBuffer buf = new StringBuffer();
@@ -43,12 +96,10 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testInlineFunctionDeclAssign() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions(
+	public void testInlineFunctionDeclAssign() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
 				"foo = function (n)\nreturn n end\nfunction test(q) return q end\n\n",
-				c);
+				CaretInfo.HOME);
 		// currently n is recognized as function parameter, and again as inline
 		// var declaration
 		// within the function declaration. But in the final completion list,
@@ -60,26 +111,26 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testLuaScoping_SimpleSeparateScopes1() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLuaScoping_SimpleSeparateScopes1() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions("do local i=5 end\ndo local q=5 end\n", c);
+		an = createAndRunTestAnalyzer("do local i=5 end\ndo local q=5 end\n", c);
 		assertEquals("local VARIABLE:i;", toString(an.getCompletions()));
 	}
 
 	@Test
-	public void testLuaScoping_SimpleSeparateScopes2() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLuaScoping_SimpleSeparateScopes2() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(13);
-		an.initCompletions("do local i=5 end\ndo local q=5 end\n", c);
+		an = createAndRunTestAnalyzer("do local i=5 end\ndo local q=5 end\n", c);
 		assertEquals("local VARIABLE:q;", toString(an.getCompletions()));
 	}
 
 	@Test
-	public void testLuaScoping_NameLists() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLuaScoping_NameLists() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(13);
-		an.initCompletions("a,b = 5\n"
+		an = createAndRunTestAnalyzer("a,b = 5\n"
 				+ "do local x, z=5 end\ndo local q=5 end\n", c);
 		assertEquals(
 				"VARIABLE:a; VARIABLE:b; local VARIABLE:x; local VARIABLE:z;",
@@ -87,19 +138,21 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testLuaScoping_StackedSeparateScopes() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLuaScoping_StackedSeparateScopes() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(10);
-		an.initCompletions("b=10\ndo local i=5 end\ndo local q=5 end\n", c);
+		an = createAndRunTestAnalyzer(
+				"b=10\ndo local i=5 end\ndo local q=5 end\n", c);
 		assertEquals("VARIABLE:b; local VARIABLE:i;",
 				toString(an.getCompletions()));
 	}
 
 	@Test
-	public void testFunctionParameterParsing() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testFunctionParameterParsing() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions("function paramsTest(a,b,c) return 5 end", c);
+		an = createAndRunTestAnalyzer(
+				"function paramsTest(a,b,c) return 5 end", c);
 		assertEquals(
 				"FUNCTION:paramsTest; local VARIABLE:a; local VARIABLE:b; local VARIABLE:c;",
 				toString(an.getCompletions()));
@@ -107,29 +160,30 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testEndOfBlockParsing() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testEndOfBlockParsing() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(40);
-		an.initCompletions("function paramsTest(a,b,c) return 5 end", c);
+		an = createAndRunTestAnalyzer(
+				"function paramsTest(a,b,c) return 5 end", c);
 		assertEquals("FUNCTION:paramsTest;", toString(an.getCompletions()));
 		assertEquals(3, an.getFunctionParams("paramsTest").size());
 	}
 
 	@Test
-	public void testAnonymousFunctionBlock() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testAnonymousFunctionBlock() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(40);
-		an.initCompletions("foo = function (n)\nreturn n*2\nend", c);
+		an = createAndRunTestAnalyzer("foo = function (n)\nreturn n*2\nend", c);
 		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
 		assertEquals(1, an.getFunctionParams("foo").size());
 	}
 
 	@Test
-	public void testDuplicateVarCompletions() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testDuplicateVarCompletions() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(40);
-		an.initCompletions("function test(arm, be, crushed)\n" + "fun = 5\n"
-				+ "return arm * arm + crushed\n" + "end", c);
+		an = createAndRunTestAnalyzer("function test(arm, be, crushed)\n"
+				+ "fun = 5\n" + "return arm * arm + crushed\n" + "end", c);
 		assertEquals(
 				"FUNCTION:test; local VARIABLE:arm; local VARIABLE:be; local VARIABLE:crushed; VARIABLE:fun;",
 				toString(an.getCompletions()));
@@ -137,21 +191,22 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testVarsInForLoop() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testVarsInForLoop() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
+		an = createAndRunTestAnalyzer("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
 		assertEquals("local VARIABLE:i; VARIABLE:q;",
 				toString(an.getCompletions()));
 	}
 
 	@Test
-	public void testLocalVarsAndFuncsFirstAndDeepestStack1() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLocalVarsAndFuncsFirstAndDeepestStack1() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
 		// currently, if the caret position is within the first and deepest
 		// stack, all completions in this stack are offered
-		an.initCompletions("someVar=5\n" + "function localDanger()\n"
+		an = createAndRunTestAnalyzer("someVar=5\n"
+				+ "function localDanger()\n"
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
@@ -161,10 +216,11 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testLocalVarsAndFuncsFirstAndDeepestStack2() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLocalVarsAndFuncsFirstAndDeepestStack2() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(40);
-		an.initCompletions("someVar=5\n" + "function localDanger()\n"
+		an = createAndRunTestAnalyzer("someVar=5\n"
+				+ "function localDanger()\n"
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
@@ -174,20 +230,20 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testLocalFunction() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLocalFunction() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(20);
-		an.initCompletions("   local function superLoco(x)\n"
+		an = createAndRunTestAnalyzer("   local function superLoco(x)\n"
 				+ "         return x+1\n" + "   end\n", c);
 		assertEquals("local FUNCTION:superLoco; local VARIABLE:x;",
 				toString(an.getCompletions()));
 	}
 
 	@Test
-	public void testNestedLocalFunction() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testNestedLocalFunction() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(20);
-		an.initCompletions("function top()\n"
+		an = createAndRunTestAnalyzer("function top()\n"
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "end\n", c);
 		assertEquals(
@@ -196,10 +252,11 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testLocalVarsAndFuncsNestedStack() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLocalVarsAndFuncsNestedStack() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(100);
-		an.initCompletions("someVar=5\n" + "function localDanger()\n"
+		an = createAndRunTestAnalyzer("someVar=5\n"
+				+ "function localDanger()\n"
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
@@ -209,10 +266,11 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testLocalVarsAndFuncsGlobalStack() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testLocalVarsAndFuncsGlobalStack() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(130);
-		an.initCompletions("someVar=5\n" + "function localDanger()\n"
+		an = createAndRunTestAnalyzer("someVar=5\n"
+				+ "function localDanger()\n"
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
@@ -221,59 +279,34 @@ public class LuaSyntaxAnalyzerTest {
 	}
 
 	@Test
-	public void testForNamelistInExp() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
+	public void testForNamelistInExp() throws Exception {
+		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(130);
-		an.initCompletions("for some, other in anyExpr do" + "   nothing()"
-				+ "end\n", c);
+		an = createAndRunTestAnalyzer("for some, other in anyExpr do"
+				+ "   nothing()" + "end\n", c);
 		assertEquals("local VARIABLE:other; local VARIABLE:some;",
 				toString(an.getCompletions()));
 	}
 
 	@Test
-	public void testAssigmentTracking() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-		CaretInfo c = CaretInfo.newInstance(0);
-		an.initCompletions("someVar = SuperClass()", c);
-		assertEquals(an.getTypeMap().get("someVar"), "SuperClass");
+	public void testVisitorParsing() throws Exception {
+		LuaSyntaxAnalyzer an;
+		CaretInfo c = CaretInfo.HOME;
+		an = createAndRunTestAnalyzer("require \"foo\"", c, new RequireVisitor());
+		assertEquals(1, an.getIncludedResources().size());
 	}
 
 	@Test
-	public void testVisitorParsing() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-		an.setVisitors(Arrays.asList(new RequireVisitor()));
+	public void testDummyResourceResolution() throws Exception {
+		LuaSyntaxAnalyzer an = createTestAnalyzer("require \"foo\"",
+				CaretInfo.HOME, new RequireVisitor());
+
 		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions("require \"foo\"", c);
-		assertEquals(1, an.getDependentResources().size());
-	}
-
-	@Test
-	public void testDummyResourceResolution() {
-		LuaSyntaxAnalyzer an = new LuaSyntaxAnalyzer();
-		an.setVisitors(Arrays.asList(new RequireVisitor()));
-		an.setResourceLoaders(Arrays.asList(new LuaResourceLoader() {
-
-			@Override
-			public boolean canLoad(LuaResource res) {
-				return true;
-			}
-
-			@Override
-			public String load(LuaResource res) throws Exception {
-				return "require \"bar\"";
-			}
-		}));
-		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions("require \"foo\"", c);
-		assertEquals(1, an.getDependentResources().size());
-		assertEquals(1, an.getDependentResourceCache().values().size());
-		assertEquals("require:foo", an.getDependentResourceCache().values()
-				.iterator().next().getResource().getResourceLink());
-		assertEquals(1, an.getDependentResourceCache().values().iterator()
-				.next().getDependentResourceCache().values().size());
-		assertEquals("require:bar", an.getDependentResourceCache().values()
-				.iterator().next().getDependentResourceCache().values()
-				.iterator().next().getResource().getResourceLink());
+		an.initCompletions(c);
+		assertEquals(1, an.getIncludedResources().size());
+		assertEquals(1, an.getLoadedIncludes().values().size());
+		assertEquals("require:foo", an.getLoadedIncludes().values().iterator()
+				.next().getResource().getResourceLink());
 
 	}
 }

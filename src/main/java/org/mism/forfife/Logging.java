@@ -35,7 +35,7 @@ import java.util.List;
  * @author tr1nergy
  *
  */
-final class Logging {
+public final class Logging {
 
 	private static final class DefaultLogger implements Logger {
 
@@ -73,7 +73,7 @@ final class Logging {
 		void info(String out);
 	}
 
-	private final List<Logger> loggers = new ArrayList<>();
+	private final List<Logger> loggers = new ArrayList<Logger>();
 
 	public static void debug(String out) {
 		for (Logger logger : instance().loggers) {

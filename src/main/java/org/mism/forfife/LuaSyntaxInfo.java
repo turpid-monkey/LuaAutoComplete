@@ -40,25 +40,32 @@ import org.mism.forfife.lua.LuaParser;
 public class LuaSyntaxInfo {
 
 	protected LuaResource resource;
+	protected LuaResourceLoader loader;
+	protected LuaResourceLoaderFactory factory;
+	
 	protected LuaSyntaxInfo parent;
-	protected String luaScript;
 	protected LuaParser.ChunkContext context;
 	protected int endIdx;
 
-	protected Stack<Map<String, CompletionInfo>> relevantStack = new Stack<>();
-	protected Map<String, List<Parameter>> functionParams = new TreeMap<>();
+	protected Stack<Map<String, CompletionInfo>> relevantStack = new Stack<Map<String, CompletionInfo>>();
+	protected Map<String, List<Parameter>> functionParams = new TreeMap<String, List<Parameter>>();
 	protected Map<String, String> typeMap = new HashMap<String, String>();
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
-	protected Set<LuaResource> dependentResources = new HashSet<>();
-	protected Map<LuaResource, LuaSyntaxInfo> dependentResourceCache = new HashMap<>();
+	protected Set<LuaResource> includedResources = new HashSet<LuaResource>();
+	protected Map<LuaResource, LuaSyntaxInfo> loadedIncludes = new HashMap<LuaResource, LuaSyntaxInfo>();
 
-	public String getLuaScript() {
-		return luaScript;
+	public void setResourceLoaderFactory(LuaResourceLoaderFactory factory) {
+		this.factory = factory;
+	}
+	
+	public String getLuaScript() throws Exception {
+		return loader.load();
 	}
 
-	public void setResource(LuaResource res) {
+	public void setResource(LuaResource res) throws Exception {
 		this.resource = res;
+	    loader = factory.createLoader(res);
 	}
 
 	public Map<String, String> getDoxyGenMap() {
@@ -73,16 +80,12 @@ public class LuaSyntaxInfo {
 		return parent;
 	}
 
-	public boolean hasResourceCached(LuaResource res) {
-		if (dependentResourceCache.containsKey(res) || res.equals(resource))
+	public boolean hasIncludeLoadedRecursive(LuaResource res) {
+		if (loadedIncludes.containsKey(res) || res.equals(resource))
 			return true;
 		if (parent == null)
 			return false;
-		return parent.hasResourceCached(res);
-	}
-
-	public void setLuaScript(String luaScript) {
-		this.luaScript = luaScript;
+		return parent.hasIncludeLoadedRecursive(res);
 	}
 
 	public LuaParser.ChunkContext getContext() {
@@ -130,28 +133,28 @@ public class LuaSyntaxInfo {
 		this.typeMap = typeMap;
 	}
 
-	public Set<LuaResource> getDependentResources() {
-		return dependentResources;
+	public Set<LuaResource> getIncludedResources() {
+		return includedResources;
 	}
 
-	public void setDependentResources(Set<LuaResource> dependentResources) {
-		this.dependentResources = dependentResources;
+	public void setIncludedResources(Set<LuaResource> includedResources) {
+		this.includedResources = includedResources;
 	}
 
-	public Map<LuaResource, LuaSyntaxInfo> getDependentResourceCache() {
-		return dependentResourceCache;
+	public Map<LuaResource, LuaSyntaxInfo> getLoadedIncludes() {
+		return loadedIncludes;
 	}
 
-	public void setDependentResourceCache(
-			Map<LuaResource, LuaSyntaxInfo> dependentResourceCache) {
-		this.dependentResourceCache = dependentResourceCache;
+	public void setLoadedIncludes(
+			Map<LuaResource, LuaSyntaxInfo> loadedIncludes) {
+		this.loadedIncludes = loadedIncludes;
 	}
 
 	/**
 	 * @return a copy of the values in the current state of the stack.
 	 */
 	public Collection<CompletionInfo> getCompletions() {
-		Map<String, CompletionInfo> map = new HashMap<>();
+		Map<String, CompletionInfo> map = new HashMap<String, CompletionInfo>();
 		for (Map<String, CompletionInfo> scope : relevantStack) {
 			for (CompletionInfo c : scope.values()) {
 				if (!map.containsKey((c.getText())))
@@ -159,6 +162,19 @@ public class LuaSyntaxInfo {
 			}
 		}
 		return map.values();
+	}
+
+	/**
+	 * 
+	 * @return recursive collections
+	 */
+	public Collection<CompletionInfo> getCompletionsRecursive() {
+		Set<CompletionInfo> completions = new HashSet<CompletionInfo>();
+		completions.addAll(getCompletions());
+		for (LuaSyntaxInfo include : loadedIncludes.values()) {
+			completions.addAll(include.getCompletionsRecursive());
+		}
+		return completions;
 	}
 
 	public LuaResource getResource() {

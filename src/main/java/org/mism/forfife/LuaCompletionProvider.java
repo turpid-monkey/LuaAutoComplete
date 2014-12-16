@@ -39,6 +39,8 @@ import org.fife.ui.autocomplete.FunctionCompletion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
+import org.mism.forfife.res.JTextComponentResourceLoader;
+import org.mism.forfife.visitors.AssignmentVisitor;
 import org.mism.forfife.visitors.DoxygenVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
@@ -46,14 +48,14 @@ import org.mism.forfife.visitors.RequireVisitor;
 public class LuaCompletionProvider extends DefaultCompletionProvider {
 	LuaCompletionHandler handler = new LuaCompletionHandler();
 
-	StaticLuaCompletions staticCompletions = new StaticLuaCompletions(this);
+	LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
 
-	String currentScript = "";
+	StaticLuaCompletions staticCompletions = new StaticLuaCompletions(this);
 
 	Map<String, String> typeMap = new HashMap<String, String>();
 
 	List<LuaCompletionVisitor> visitors = new ArrayList<LuaCompletionVisitor>();
-	List<LuaResourceLoader> loaders = new ArrayList<LuaResourceLoader>();
+	LuaResourceLoaderFactory factory = new LuaResourceLoaderFactory();
 
 	public Map<String, String> getTypeMap() {
 		return typeMap;
@@ -67,7 +69,16 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		setParameterizedCompletionParams('(', ",", ')');
 		setAutoActivationRules(true, ":");
 		fillVisitors(visitors);
-		fillResourceLoaders(loaders);
+		fillResourceLoaders(factory.getLoaders());
+		LuaResource res = new LuaResource("textArea:");
+		analyzer.setVisitors(visitors);
+		analyzer.setResourceLoaderFactory(factory);
+		try {
+			analyzer.setResource(res);
+
+		} catch (Exception e) {
+			Logging.error("Could not instantiate root syntax analyzer", e);
+		}
 	}
 
 	protected String i18n(Object o) {
@@ -78,7 +89,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			Collection<CompletionInfo> infos,
 			Map<String, List<Parameter>> functionParams,
 			Map<String, String> functionDescr) {
-		List<Completion> completions = new ArrayList<>();
+		List<Completion> completions = new ArrayList<Completion>();
 		for (CompletionInfo comp : infos) {
 			switch (comp.getType()) {
 			case FUNCTION:
@@ -87,15 +98,40 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				fc.setRelevance(4000);
 				List<Parameter> params = functionParams.get(comp.getText());
 				fc.setParams(params);
+
+				StringBuffer shortDescr = new StringBuffer();
 				if (functionDescr.containsKey(comp.getText())) {
-					fc.setShortDescription(functionDescr.get(comp.getText()));
+					shortDescr.append(functionDescr.get(comp.getText()));
 				}
+				if (comp.getResource() != null
+						&& !comp.getResource().getResourceLink()
+								.startsWith("textArea")) {
+					shortDescr.append("<p>included from "
+							+ comp.getResource().getResourceLink() + ", line "
+							+ comp.getLine());
+				} else {
+					shortDescr.append("<p>from line " + comp.getLine());
+				}
+
+				fc.setShortDescription(shortDescr.toString());
+
 				completions.add(fc);
 				break;
 			case VARIABLE:
 				VariableCompletion varCompl = new VariableCompletion(this,
 						comp.getText(), "variable");
 				varCompl.setRelevance(9000);
+				StringBuffer summary = new StringBuffer();
+				if (comp.getResource() != null
+						&& !comp.getResource().getResourceLink()
+								.startsWith("textArea")) {
+					summary.append("<p>included from "
+							+ comp.getResource().getResourceLink() + ", line "
+							+ comp.getLine());
+				} else {
+					summary.append("<p>from line " + comp.getLine());
+				}
+				varCompl.setShortDescription(summary.toString());
 				completions.add(varCompl);
 				break;
 			case LANGUAGE:
@@ -108,14 +144,17 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	// TODO: Pass list as reference
 	// TODO: Provider param information as part of the completion info object
-	protected List<Completion> initDynamicCompletions(LuaSyntaxInfo analyzer) {
+	protected void fillDynamicCompletions(List<Completion> completions,
+			LuaSyntaxInfo analyzer) {
 
-		return initDynamicCompletions(analyzer.getCompletions(),
-				analyzer.getFunctionParams(), analyzer.getDoxyGenMap());
+		completions.addAll(initDynamicCompletions(
+				analyzer.getCompletionsRecursive(),
+				analyzer.getFunctionParams(), analyzer.getDoxyGenMap()));
 	}
 
 	@Override
 	public List<Completion> getCompletions(JTextComponent comp) {
+		JTextComponentResourceLoader.getTextAreas().add(comp);
 		List<Completion> completions = new ArrayList<Completion>();
 		fillCompletions(completions, comp.getText(),
 				getCaretInfoFor((RSyntaxTextArea) comp));
@@ -127,30 +166,24 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	protected void fillCompletions(List<Completion> completions,
 			String luaScript, CaretInfo info) {
-		luaScript = luaScript.trim();
-		if (currentScript.equals(luaScript)) {
-			return;
-		}
-		currentScript = luaScript;
-		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
-		analyzer.setVisitors(visitors);
-		analyzer.setResourceLoaders(loaders);
-		if (!analyzer.initCompletions(luaScript, info))
+		if (!analyzer.initCompletions(info))
 			return;
 		handler.validChange(analyzer.getContext());
 		typeMap.clear();
 		typeMap.putAll(analyzer.getTypeMap());
 		completions.addAll(staticCompletions.getCompletions());
-		completions.addAll(initDynamicCompletions(analyzer));
+		fillDynamicCompletions(completions, analyzer);
 	}
 
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {
 		visitors.add(new RequireVisitor());
 		visitors.add(new DoxygenVisitor());
+		visitors.add(new AssignmentVisitor());
 	}
 
-	protected void fillResourceLoaders(List<LuaResourceLoader> loaders) {
-		
+	protected void fillResourceLoaders(
+			List<Class<? extends LuaResourceLoader>> loaders) {
+		loaders.add(JTextComponentResourceLoader.class);
 	}
 
 	static CaretInfo getCaretInfoFor(RSyntaxTextArea textArea) {

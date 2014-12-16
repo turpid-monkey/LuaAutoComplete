@@ -9,15 +9,29 @@ import org.mism.forfife.LuaResourceLoader;
 
 public class FileResourceLoader implements LuaResourceLoader {
 
+	LuaResource resource;
+	File file;
+	long lastModified;
+
 	@Override
-	public boolean canLoad(LuaResource res) {
-		return res.getResourceLink().startsWith("file:");
+	public void setResource(LuaResource resource) {
+		String fileName = resource.getResourceLink().substring(5);
+		file = new File(fileName);
+		lastModified = file.lastModified();
+	}
+	
+	@Override
+	public LuaResource getResource() {
+		return resource;
 	}
 
 	@Override
-	public String load(LuaResource res) throws Exception {
-		String fileName = res.getResourceLink().substring(5);
-		File file = new File(fileName);
+	public boolean canLoad() {
+		return resource.getResourceLink().startsWith("file:");
+	}
+
+	@Override
+	public String load() throws Exception {
 		return load(file);
 	}
 
@@ -29,6 +43,11 @@ public class FileResourceLoader implements LuaResourceLoader {
 			buf.append(line).append("\n");
 		in.close();
 		return buf.toString();
+	}
+
+	@Override
+	public boolean hasModifications() {
+		return lastModified < file.lastModified();
 	}
 
 }
