@@ -318,7 +318,7 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 					}
 				}
 			}
-			popScope(stop.getStopIndex());
+			popScope(ctx.getStart().getStopIndex(), stop.getStopIndex());
 		}
 
 		private void pushScope(ParserRuleContext ctx) {
@@ -335,15 +335,15 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			frozen = true;
 		}
 
-		private void popScope(int offset) {
+		private void popScope(int startOffset, int endOffset) {
 			// our caret offset lies in this block
-			if (!frozen && offset >= info.getPosition()) {
+			if (!frozen && endOffset >= info.getPosition() && startOffset <= info.getPosition()) {
 				useScope();
 			}
 			// we are about to pop the last scope without having found
 			// the proper one - this should only be the case when
 			// the caret pos is beyond the end of the block.
-			if (!frozen && scopes.size() == 1 && info.getPosition() != 0) {
+			if (!frozen && scopes.size() == 1) {
 				useScope();
 			}
 			// Logging.info("Scope popped: " + scopes.peek());
@@ -353,7 +353,17 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		@Override
 		public void exitBlock(BlockContext ctx) {
 			Token stop = ctx.getStop();
-			popScope(stop.getStopIndex());
+			int startOffset;
+			Token start = ctx.getStart();
+			if (LOCAL.equals(start.getText()))
+			{
+				startOffset = start.getStartIndex();
+			}
+			else
+			{
+				startOffset = start.getStopIndex();
+			}
+			popScope(startOffset, stop.getStopIndex());
 		}
 	}
 }

@@ -104,7 +104,7 @@ public class LuaSyntaxAnalyzerTest {
 		// var declaration
 		// within the function declaration. But in the final completion list,
 		// only n shows.
-		assertEquals("FUNCTION:foo; FUNCTION:test; local VARIABLE:n;",
+		assertEquals("FUNCTION:foo; FUNCTION:test;",
 				toString(an.getCompletions()));
 		assertEquals(1, an.getFunctionParams("foo").size());
 		assertEquals("n", an.getFunctionParams("foo").get(0).getName());
@@ -113,7 +113,7 @@ public class LuaSyntaxAnalyzerTest {
 	@Test
 	public void testLuaScoping_SimpleSeparateScopes1() throws Exception {
 		LuaSyntaxAnalyzer an;
-		CaretInfo c = CaretInfo.HOME;
+		CaretInfo c = CaretInfo.newInstance(5);
 		an = createAndRunTestAnalyzer("do local i=5 end\ndo local q=5 end\n", c);
 		assertEquals("local VARIABLE:i;", toString(an.getCompletions()));
 	}
@@ -121,7 +121,7 @@ public class LuaSyntaxAnalyzerTest {
 	@Test
 	public void testLuaScoping_SimpleSeparateScopes2() throws Exception {
 		LuaSyntaxAnalyzer an;
-		CaretInfo c = CaretInfo.newInstance(13);
+		CaretInfo c = CaretInfo.newInstance(21);
 		an = createAndRunTestAnalyzer("do local i=5 end\ndo local q=5 end\n", c);
 		assertEquals("local VARIABLE:q;", toString(an.getCompletions()));
 	}
@@ -150,7 +150,7 @@ public class LuaSyntaxAnalyzerTest {
 	@Test
 	public void testFunctionParameterParsing() throws Exception {
 		LuaSyntaxAnalyzer an;
-		CaretInfo c = CaretInfo.HOME;
+		CaretInfo c = CaretInfo.newInstance(20);
 		an = createAndRunTestAnalyzer(
 				"function paramsTest(a,b,c) return 5 end", c);
 		assertEquals(
@@ -211,7 +211,7 @@ public class LuaSyntaxAnalyzerTest {
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
 		assertEquals(
-				"FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE:q; VARIABLE:someVar; local VARIABLE:x;",
+				"FUNCTION:localDanger; VARIABLE:someVar;",
 				toString(an.getCompletions()));
 	}
 
@@ -225,15 +225,15 @@ public class LuaSyntaxAnalyzerTest {
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
 		assertEquals(
-				"FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE:q; VARIABLE:someVar; local VARIABLE:x;",
+				"FUNCTION:localDanger; local FUNCTION:superLoco; local VARIABLE:q; VARIABLE:someVar;",
 				toString(an.getCompletions()));
 	}
 
 	@Test
 	public void testLocalFunction() throws Exception {
 		LuaSyntaxAnalyzer an;
-		CaretInfo c = CaretInfo.newInstance(20);
-		an = createAndRunTestAnalyzer("   local function superLoco(x)\n"
+		CaretInfo c = CaretInfo.newInstance(26);
+		an = createAndRunTestAnalyzer("local function superLoco(x)\n"
 				+ "         return x+1\n" + "   end\n", c);
 		assertEquals("local FUNCTION:superLoco; local VARIABLE:x;",
 				toString(an.getCompletions()));
@@ -242,7 +242,7 @@ public class LuaSyntaxAnalyzerTest {
 	@Test
 	public void testNestedLocalFunction() throws Exception {
 		LuaSyntaxAnalyzer an;
-		CaretInfo c = CaretInfo.newInstance(20);
+		CaretInfo c = CaretInfo.newInstance(49);
 		an = createAndRunTestAnalyzer("function top()\n"
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "end\n", c);
