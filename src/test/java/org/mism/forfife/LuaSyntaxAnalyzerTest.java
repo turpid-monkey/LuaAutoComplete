@@ -7,7 +7,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
@@ -67,7 +69,7 @@ public class LuaSyntaxAnalyzerTest {
 	public static LuaSyntaxAnalyzer createAndRunTestAnalyzer(String script,
 			CaretInfo info, LuaCompletionVisitor... visitors) throws Exception {
 		LuaSyntaxAnalyzer an = createTestAnalyzer(script, info, visitors);
-		an.initCompletions(info);
+		an.initCompletions(info, new HashMap<LuaResource, LuaSyntaxInfo>());
 		return an;
 	}
 
@@ -302,11 +304,19 @@ public class LuaSyntaxAnalyzerTest {
 				CaretInfo.HOME, new RequireVisitor());
 
 		CaretInfo c = CaretInfo.HOME;
-		an.initCompletions(c);
+		Map<LuaResource, LuaSyntaxInfo> includes = new HashMap<LuaResource, LuaSyntaxInfo>();
+		an.initCompletions(c, includes);
 		assertEquals(1, an.getIncludedResources().size());
-		assertEquals(1, an.getLoadedIncludes().values().size());
-		assertEquals("require:foo", an.getLoadedIncludes().values().iterator()
+		assertEquals("require:foo", includes.values().iterator()
 				.next().getResource().getResourceLink());
 
+	}
+	
+	@Test
+	public void nestedLocalsGoGlobal() throws Exception
+	{
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("function test()\n  local file\n  function inner()\n    file = 1\n  end\nend\n", CaretInfo.HOME);
+		assertEquals("FUNCTION:inner; FUNCTION:test;",
+				toString(an.getCompletions()));
 	}
 }

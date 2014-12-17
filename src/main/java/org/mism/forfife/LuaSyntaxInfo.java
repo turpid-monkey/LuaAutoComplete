@@ -53,8 +53,7 @@ public class LuaSyntaxInfo {
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
 	protected Set<LuaResource> includedResources = new HashSet<LuaResource>();
-	protected Map<LuaResource, LuaSyntaxInfo> loadedIncludes = new HashMap<LuaResource, LuaSyntaxInfo>();
-
+	
 	public void setResourceLoaderFactory(LuaResourceLoaderFactory factory) {
 		this.factory = factory;
 	}
@@ -78,14 +77,6 @@ public class LuaSyntaxInfo {
 
 	public LuaSyntaxInfo getParent() {
 		return parent;
-	}
-
-	public boolean hasIncludeLoadedRecursive(LuaResource res) {
-		if (loadedIncludes.containsKey(res) || res.equals(resource))
-			return true;
-		if (parent == null)
-			return false;
-		return parent.hasIncludeLoadedRecursive(res);
 	}
 
 	public LuaParser.ChunkContext getContext() {
@@ -141,15 +132,6 @@ public class LuaSyntaxInfo {
 		this.includedResources = includedResources;
 	}
 
-	public Map<LuaResource, LuaSyntaxInfo> getLoadedIncludes() {
-		return loadedIncludes;
-	}
-
-	public void setLoadedIncludes(
-			Map<LuaResource, LuaSyntaxInfo> loadedIncludes) {
-		this.loadedIncludes = loadedIncludes;
-	}
-
 	/**
 	 * @return a copy of the values in the current state of the stack.
 	 */
@@ -162,19 +144,6 @@ public class LuaSyntaxInfo {
 			}
 		}
 		return map.values();
-	}
-
-	/**
-	 * 
-	 * @return recursive collections
-	 */
-	public Collection<CompletionInfo> getCompletionsRecursive() {
-		Set<CompletionInfo> completions = new HashSet<CompletionInfo>();
-		completions.addAll(getCompletions());
-		for (LuaSyntaxInfo include : loadedIncludes.values()) {
-			completions.addAll(include.getCompletionsRecursive());
-		}
-		return completions;
 	}
 
 	public LuaResource getResource() {

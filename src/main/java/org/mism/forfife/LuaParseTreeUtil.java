@@ -43,9 +43,7 @@ public class LuaParseTreeUtil {
 			ParserRuleContext inner, final int ruleIdx, final Class<T> t) {
 		while ((inner = inner.getParent()).getRuleIndex() != ruleIdx) {
 			if (inner.getRuleIndex() == LuaParser.RULE_chunk)
-				throw new IllegalArgumentException(
-						"Reached top of AST, no parent context of type "
-								+ t.getName() + " found. Coding error.");
+				return null;
 		}
 		return t.cast(inner);
 	}

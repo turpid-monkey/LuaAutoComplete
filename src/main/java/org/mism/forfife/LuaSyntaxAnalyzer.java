@@ -71,9 +71,6 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	List<LuaCompletionVisitor> visitors = Collections.emptyList();
 
 	public void setVisitors(List<LuaCompletionVisitor> visitors) {
-		for (LuaCompletionVisitor v : visitors) {
-			v.setInfo(this);
-		}
 		this.visitors = visitors;
 	}
 
@@ -93,9 +90,11 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	 * @param luaScript
 	 * @return whether the parsing went well
 	 */
-	public boolean initCompletions(CaretInfo info) {
-		if (loader.hasModifications() || !ok) {
-			try {
+	public boolean initCompletions(CaretInfo info,
+			Map<LuaResource, LuaSyntaxInfo> includes) {
+		try {
+			if (loader.hasModifications() || !ok) {
+
 				String luaScript = getLuaScript();
 				endIdx = luaScript.trim().length() - 1;
 				ANTLRInputStream str = new ANTLRInputStream(new StringReader(
@@ -106,43 +105,34 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				parser.addParseListener(new LuaListener(info));
 				context = parser.chunk();
 				for (LuaCompletionVisitor visitor : visitors) {
+					visitor.setInfo(this);
 					context.accept(visitor);
 				}
-				for (LuaResource res : includedResources) {
-					if (!loadedIncludes.containsKey(res)) {
-						if (hasIncludeLoadedRecursive(res))
-							continue;
-						try {
-							Logging.debug("Loading included file "
-									+ res.getResourceLink());
-							LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer(
-									this, res);
-
-							loadedIncludes.put(res, nested);
-						} catch (Exception e) {
-							Logging.error(
-									"Could not load resource "
-											+ res.getResourceLink(), e);
-						}
-					}
-					((LuaSyntaxAnalyzer) loadedIncludes.get(res))
-							.initCompletions(info);
-
-				}
-
-				return ok = true;
-			} catch (RecognitionException e) {
-				Logging.debug("Parser unhappy with current script state. This is ok."
-						+ e.getMessage());
-				return ok = false;
+			}
+			ok = true;
+		} catch (RecognitionException e) {
+			Logging.debug("Parser unhappy with current script state. This is ok."
+					+ e.getMessage());
+			ok = false;
+		} catch (Exception e) {
+			Logging.error(
+					"Bad code in completion-creation code, this is not ok.", e);
+			ok = false;
+		}
+		for (LuaResource res : includedResources) {
+			if (includes.containsKey(res))
+				continue;
+			try {
+				Logging.debug("Loading included file " + res.getResourceLink());
+				LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer(this, res);
+				includes.put(res, nested);
+				nested.initCompletions(info, includes);
 			} catch (Exception e) {
 				Logging.error(
-						"Bad code in completion-creation code, this is not ok.",
-						e);
-				return ok = false;
+						"Could not load resource " + res.getResourceLink(), e);
 			}
 		}
-		return true;
+		return ok;
 	}
 
 	private class LuaListener extends LuaBaseListener {
@@ -223,13 +213,13 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		@Override
 		public void exitVar(LuaParser.VarContext ctx) {
 			String varName = start(ctx);
-			LuaParser.StatContext statCtx = getParentStatContext(ctx);
-			boolean local = start(statCtx).equals(LOCAL);
 
 			// if it is a subrule of prefixExp, it might as well be a function
 			// call
 			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp)
 					&& !hasParentRuleContext(ctx, LuaParser.RULE_functioncall)) {
+				LuaParser.StatContext statCtx = getParentStatContext(ctx);
+				boolean local = statCtx != null && start(statCtx).equals(LOCAL);
 				addVariable(varName, ctx, local);
 			}
 		}
@@ -337,7 +327,8 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
 		private void popScope(int startOffset, int endOffset) {
 			// our caret offset lies in this block
-			if (!frozen && endOffset >= info.getPosition() && startOffset <= info.getPosition()) {
+			if (!frozen && endOffset >= info.getPosition()
+					&& startOffset <= info.getPosition()) {
 				useScope();
 			}
 			// we are about to pop the last scope without having found
@@ -355,12 +346,9 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			Token stop = ctx.getStop();
 			int startOffset;
 			Token start = ctx.getStart();
-			if (LOCAL.equals(start.getText()))
-			{
+			if (LOCAL.equals(start.getText())) {
 				startOffset = start.getStartIndex();
-			}
-			else
-			{
+			} else {
 				startOffset = start.getStopIndex();
 			}
 			popScope(startOffset, stop.getStopIndex());

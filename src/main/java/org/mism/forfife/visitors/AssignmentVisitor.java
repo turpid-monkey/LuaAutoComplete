@@ -43,8 +43,8 @@ public class AssignmentVisitor extends LuaCompletionVisitor {
 		if (statCtx.getChildCount() == 3) {
 			if (statCtx.getChild(1).getText().equals("=")) {
 				info.getTypeMap().put(start(statCtx), start(ctx));
-				Logging.debug("Found a possible type in line " + line(ctx)
-						+ ": var " + start(statCtx) + " = " + start(ctx));
+				//Logging.debug("Found a possible type in line " + line(ctx)
+				//		+ ": var " + start(statCtx) + " = " + start(ctx));
 			}
 		}
 		return null;

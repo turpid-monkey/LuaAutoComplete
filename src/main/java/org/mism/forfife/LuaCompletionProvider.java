@@ -48,9 +48,10 @@ import org.mism.forfife.visitors.RequireVisitor;
 public class LuaCompletionProvider extends DefaultCompletionProvider {
 	LuaCompletionHandler handler = new LuaCompletionHandler();
 
-	LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
-
 	StaticLuaCompletions staticCompletions = new StaticLuaCompletions(this);
+
+	LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
+	Map<LuaResource, LuaSyntaxInfo> includeCache = new HashMap<LuaResource, LuaSyntaxInfo>();
 
 	Map<String, String> typeMap = new HashMap<String, String>();
 
@@ -65,12 +66,18 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		return handler;
 	}
 
+	@Override
+	protected boolean isValidChar(char ch) {
+		return super.isValidChar(ch) || ch == ':';
+	}
+
 	public LuaCompletionProvider() {
 		setParameterizedCompletionParams('(', ",", ')');
-		setAutoActivationRules(true, ":");
+		setAutoActivationRules(false, ":");
 		fillVisitors(visitors);
 		fillResourceLoaders(factory.getLoaders());
 		LuaResource res = new LuaResource("textArea:");
+		includeCache.put(res, analyzer);
 		analyzer.setVisitors(visitors);
 		analyzer.setResourceLoaderFactory(factory);
 		try {
@@ -142,37 +149,35 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		return completions;
 	}
 
-	// TODO: Pass list as reference
-	// TODO: Provider param information as part of the completion info object
 	protected void fillDynamicCompletions(List<Completion> completions,
-			LuaSyntaxInfo analyzer) {
-
-		completions.addAll(initDynamicCompletions(
-				analyzer.getCompletionsRecursive(),
-				analyzer.getFunctionParams(), analyzer.getDoxyGenMap()));
+			Map<LuaResource, LuaSyntaxInfo> luaFiles) {
+		for (LuaSyntaxInfo info : luaFiles.values()) {
+			completions.addAll(initDynamicCompletions(info.getCompletions(),
+					info.getFunctionParams(), info.getDoxyGenMap()));
+		}
 	}
 
 	@Override
-	public List<Completion> getCompletions(JTextComponent comp) {
+	protected List<Completion> getCompletionsImpl(JTextComponent comp) {
 		JTextComponentResourceLoader.getTextAreas().add(comp);
+		String alreadyEntered = getAlreadyEnteredText(comp);
 		List<Completion> completions = new ArrayList<Completion>();
-		fillCompletions(completions, comp.getText(),
+		fillCompletions(completions, alreadyEntered,
 				getCaretInfoFor((RSyntaxTextArea) comp));
 		super.clear();
 		Logging.debug("Created " + completions.size() + " completions.");
 		addCompletions(completions);
-		return super.getCompletions(comp);
+		return super.getCompletionsImpl(comp);
 	}
 
 	protected void fillCompletions(List<Completion> completions,
-			String luaScript, CaretInfo info) {
-		if (!analyzer.initCompletions(info))
-			return;
+			String alreadyEntered, CaretInfo info) {
+		analyzer.initCompletions(info, includeCache);
 		handler.validChange(analyzer.getContext());
 		typeMap.clear();
 		typeMap.putAll(analyzer.getTypeMap());
 		completions.addAll(staticCompletions.getCompletions());
-		fillDynamicCompletions(completions, analyzer);
+		fillDynamicCompletions(completions, includeCache);
 	}
 
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {

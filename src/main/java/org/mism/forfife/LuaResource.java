@@ -57,4 +57,9 @@ public class LuaResource implements Comparable<LuaResource> {
 		return false;
 	}
 
+	@Override
+	public int hashCode() {
+		return resourceLink.hashCode();
+	}
+
 }

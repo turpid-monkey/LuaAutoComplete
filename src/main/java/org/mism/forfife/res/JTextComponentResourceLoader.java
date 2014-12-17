@@ -25,8 +25,8 @@
  */
 package org.mism.forfife.res;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.swing.text.JTextComponent;
 
@@ -35,9 +35,9 @@ import org.mism.forfife.LuaResourceLoader;
 
 public class JTextComponentResourceLoader implements LuaResourceLoader {
 
-	static List<JTextComponent> TEXT_AREAS = new ArrayList<JTextComponent>();
+	static Set<JTextComponent> TEXT_AREAS = new HashSet<JTextComponent>();
 
-	public static List<JTextComponent> getTextAreas() {
+	public static Set<JTextComponent> getTextAreas() {
 		return TEXT_AREAS;
 	}
 
@@ -57,7 +57,7 @@ public class JTextComponentResourceLoader implements LuaResourceLoader {
 
 	@Override
 	public String load() throws Exception {
-		return getTextArea().getText();
+		return cache = getTextArea().getText();
 	}
 
 	@Override
