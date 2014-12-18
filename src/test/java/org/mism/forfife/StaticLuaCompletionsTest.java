@@ -50,35 +50,14 @@ public class StaticLuaCompletionsTest {
 	public void testAddFunctionCompletion() {
 		StaticLuaCompletions comps = new StaticLuaCompletions(null);
 		List<Completion> completions = new ArrayList<Completion>();
-		comps.addCompletion(completions, new AbstractCompletionProvider() {
-
-			@Override
-			public List<ParameterizedCompletion> getParameterizedCompletions(
-					JTextComponent tc) {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public List<Completion> getCompletionsAt(JTextComponent comp,
-					Point p) {
-				// TODO Auto-generated method stub
-				return null;
-			}
-
-			@Override
-			public String getAlreadyEnteredText(JTextComponent comp) {
-				// TODO Auto-generated method stub
-				return null;
-			}
-		}, new String[] { "PC", "test", "summary", "void", "a", "b", "c" });
+		comps.addCompletion(completions,new LuaCompletionProvider(), new String[] { "PC", "test", "summary", "void", "a", "b", "c" });
 		assertEquals(1, completions.size());
 		FunctionCompletion fc = (FunctionCompletion) completions.get(0);
 		assertEquals(3, fc.getParamCount());
 		assertEquals("void", fc.getType());
 		assertEquals("test", fc.getName());
 		assertEquals(
-				"<html><b>void testanullbnullc</b><hr><br>summary<br><br><br><b>Parameters:</b><br><center><table width='90%'><tr><td><b>a</b>&nbsp;<br><b>b</b>&nbsp;<br><b>c</b>&nbsp;<br></td></tr></table></center><br><br>",
+				"<html><b>void test(a,b,c)</b><hr><br>summary<br><br><br><b>Parameters:</b><br><center><table width='90%'><tr><td><b>a</b>&nbsp;<br><b>b</b>&nbsp;<br><b>c</b>&nbsp;<br></td></tr></table></center><br><br>",
 				fc.getSummary());
 	}
 
@@ -86,7 +65,7 @@ public class StaticLuaCompletionsTest {
 	public void testStaticTableImport() {
 		StaticLuaCompletions comps = new StaticLuaCompletions(null);
 		List<Completion> completions = new ArrayList<Completion>();
-		comps.addCompletions(completions, null, comps.completionsTable);
+		comps.addCompletions(completions, new LuaCompletionProvider(), comps.completionsTable);
 		assertEquals(74, completions.size());
 	}
 }

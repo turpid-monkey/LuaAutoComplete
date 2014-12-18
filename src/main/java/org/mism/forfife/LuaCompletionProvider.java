@@ -104,7 +104,6 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			case FUNCTION:
 				FunctionCompletion fc = new FunctionCompletion(this,
 						comp.getText(), "function");
-				fc.setIcon(null);
 				fc.setRelevance(4000);
 				List<Parameter> params = functionParams.get(comp.getText());
 				fc.setParams(params);
