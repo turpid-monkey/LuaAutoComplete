@@ -66,7 +66,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	@Override
 	protected boolean isValidChar(char ch) {
-		return super.isValidChar(ch) || ch == ':';
+		return super.isValidChar(ch) || ch == ':' || ch == '.';
 	}
 
 	public LuaCompletionProvider() {
