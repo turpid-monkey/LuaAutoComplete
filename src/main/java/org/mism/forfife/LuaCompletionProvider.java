@@ -31,8 +31,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.swing.Icon;
 import javax.swing.text.JTextComponent;
 
+import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.FunctionCompletion;
@@ -102,6 +104,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			case FUNCTION:
 				FunctionCompletion fc = new FunctionCompletion(this,
 						comp.getText(), "function");
+				fc.setIcon(null);
 				fc.setRelevance(4000);
 				List<Parameter> params = functionParams.get(comp.getText());
 				fc.setParams(params);
@@ -121,7 +124,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				}
 
 				fc.setShortDescription(shortDescr.toString());
-
+				fc.setIcon(IconLib.instance().getFunctionIcon());
 				completions.add(fc);
 				break;
 			case VARIABLE:
@@ -139,6 +142,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 					summary.append("<p>from line " + comp.getLine());
 				}
 				varCompl.setShortDescription(summary.toString());
+				varCompl.setIcon(IconLib.instance().getVariableIcon());
 				completions.add(varCompl);
 				break;
 			case LANGUAGE:

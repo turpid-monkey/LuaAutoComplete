@@ -279,6 +279,7 @@ public class StaticLuaCompletions {
 			FunctionCompletion fc = new FunctionCompletion(provider, row[1],
 					row[3]);
 			fc.setShortDescription(row[2]);
+			fc.setIcon(IconLib.instance().getLibraryIcon());
 			List<Parameter> params = new ArrayList<Parameter>();
 			for (int i = 4; i < row.length; i++) {
 				params.add(new Parameter(null, row[i]));

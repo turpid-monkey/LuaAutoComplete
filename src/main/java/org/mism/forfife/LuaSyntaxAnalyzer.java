@@ -230,6 +230,12 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			addFunction(funcName, ctx, false);
 
 		}
+		
+		@Override
+		public void enterStat(StatContext ctx) {
+			if (LOCAL.equals(start(ctx))) return;
+			pushScope(ctx);
+		}
 
 		@Override
 		public void enterBlock(BlockContext ctx) {
@@ -257,6 +263,8 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 					addFunction(localFunction, ctx, true);
 				}
 			}
+			if (LOCAL.equals(startText)) return;
+			popScope(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex());
 		}
 
 		@Override
@@ -326,14 +334,14 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		}
 
 		private void popScope(int startOffset, int endOffset) {
-			// our caret offset lies in this block
+			// caret offset lies in this block
 			if (!frozen && endOffset >= info.getPosition()
 					&& startOffset <= info.getPosition()) {
 				useScope();
 			}
 			// we are about to pop the last scope without having found
 			// the proper one - this should only be the case when
-			// the caret pos is beyond the end of the block.
+			// the caret pos is beyond the end of the block, or 0
 			if (!frozen && scopes.size() == 1) {
 				useScope();
 			}
@@ -351,7 +359,7 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			} else {
 				startOffset = start.getStopIndex();
 			}
-			popScope(startOffset, stop.getStopIndex());
+			popScope(startOffset, (stop!=null?stop.getStopIndex():endIdx));
 		}
 	}
 }

@@ -29,7 +29,7 @@ public class LuaSyntaxAnalyzerTest {
 		public void setResource(LuaResource resource) {
 			this.resource = resource;
 		}
-		
+
 		@Override
 		public LuaResource getResource() {
 			return resource;
@@ -197,6 +197,15 @@ public class LuaSyntaxAnalyzerTest {
 		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
 		an = createAndRunTestAnalyzer("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
+		assertEquals("VARIABLE:q;",
+				toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void testVarsInForLoop2() throws Exception {
+		LuaSyntaxAnalyzer an;
+		CaretInfo c = CaretInfo.newInstance(20);
+		an = createAndRunTestAnalyzer("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
 		assertEquals("local VARIABLE:i; VARIABLE:q;",
 				toString(an.getCompletions()));
 	}
@@ -212,8 +221,7 @@ public class LuaSyntaxAnalyzerTest {
 				+ "   local function superLoco(x)\n" + "         return x+1\n"
 				+ "   end\n" + "   local q = superLoco(5)\n" + "   return q\n"
 				+ "end\n", c);
-		assertEquals(
-				"FUNCTION:localDanger; VARIABLE:someVar;",
+		assertEquals("FUNCTION:localDanger; VARIABLE:someVar;",
 				toString(an.getCompletions()));
 	}
 
@@ -283,7 +291,7 @@ public class LuaSyntaxAnalyzerTest {
 	@Test
 	public void testForNamelistInExp() throws Exception {
 		LuaSyntaxAnalyzer an;
-		CaretInfo c = CaretInfo.newInstance(130);
+		CaretInfo c = CaretInfo.newInstance(31);
 		an = createAndRunTestAnalyzer("for some, other in anyExpr do"
 				+ "   nothing()" + "end\n", c);
 		assertEquals("local VARIABLE:other; local VARIABLE:some;",
@@ -294,7 +302,8 @@ public class LuaSyntaxAnalyzerTest {
 	public void testVisitorParsing() throws Exception {
 		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
-		an = createAndRunTestAnalyzer("require \"foo\"", c, new RequireVisitor());
+		an = createAndRunTestAnalyzer("require \"foo\"", c,
+				new RequireVisitor());
 		assertEquals(1, an.getIncludedResources().size());
 	}
 
@@ -307,16 +316,25 @@ public class LuaSyntaxAnalyzerTest {
 		Map<LuaResource, LuaSyntaxInfo> includes = new HashMap<LuaResource, LuaSyntaxInfo>();
 		an.initCompletions(c, includes);
 		assertEquals(1, an.getIncludedResources().size());
-		assertEquals("require:foo", includes.values().iterator()
-				.next().getResource().getResourceLink());
+		assertEquals("require:foo", includes.values().iterator().next()
+				.getResource().getResourceLink());
 
 	}
-	
+
 	@Test
-	public void nestedLocalsGoGlobal() throws Exception
-	{
-		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("function test()\n  local file\n  function inner()\n    file = 1\n  end\nend\n", CaretInfo.HOME);
+	public void nestedLocalsGoGlobal() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"function test()\n  local file\n  function inner()\n    file = 1\n  end\nend\n",
+				CaretInfo.HOME);
 		assertEquals("FUNCTION:inner; FUNCTION:test;",
 				toString(an.getCompletions()));
+	}
+
+	@Test
+	public void forNNinPairsGoGlobal() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"someVar = 5\nfor _, plot in ipairs(plots) do\n return 5\n end\n",
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:someVar;", toString(an.getCompletions()));
 	}
 }
