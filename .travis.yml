@@ -1,6 +1,6 @@
 language: java
 jdk:
-  - oraclejdk6
+  - oraclejdk8
 
 install:
   - ./gradlew --refresh-dependencies --stacktrace

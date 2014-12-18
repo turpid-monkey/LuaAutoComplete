@@ -12,7 +12,7 @@ group = 'org.mism.forfife'
 jar.dependsOn compileJava
 compileJava.dependsOn antlr4 
 
-sourceCompatibility = '1.8'
+sourceCompatibility = '1.6'
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 
 
