@@ -25,29 +25,29 @@
  */
 package org.mism.forfife.res;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.swing.text.JTextComponent;
-
 import org.mism.forfife.LuaResource;
 import org.mism.forfife.LuaResourceLoader;
+import org.mism.forfife.TextAreaManager;
 
 public class JTextComponentResourceLoader implements LuaResourceLoader {
 
-	static Set<JTextComponent> TEXT_AREAS = new HashSet<JTextComponent>();
+	static TextAreaManager TEXT_AREA_MANAGER;
 
-	public static Set<JTextComponent> getTextAreas() {
-		return TEXT_AREAS;
+	public static TextAreaManager getTextAreaManager() {
+		return TEXT_AREA_MANAGER;
+	}
+	
+	public static void setTextAreaManager(TextAreaManager mgr)
+	{
+		TEXT_AREA_MANAGER = mgr;
 	}
 
-	JTextComponent textArea;
 	String cache;
 	LuaResource res;
 
 	@Override
 	public boolean hasModifications() {
-		return !getTextArea().getText().equals(cache);
+		return !getTextAreaManager().getTextArea(res).getText().equals(cache);
 	}
 
 	@Override
@@ -57,7 +57,7 @@ public class JTextComponentResourceLoader implements LuaResourceLoader {
 
 	@Override
 	public String load() throws Exception {
-		return cache = getTextArea().getText();
+		return cache = getTextAreaManager().getTextArea(res).getText();
 	}
 
 	@Override
@@ -68,12 +68,6 @@ public class JTextComponentResourceLoader implements LuaResourceLoader {
 	@Override
 	public LuaResource getResource() {
 		return res;
-	}
-	
-	
-	private JTextComponent getTextArea()
-	{
-		return TEXT_AREAS.iterator().next();
 	}
 	
 }

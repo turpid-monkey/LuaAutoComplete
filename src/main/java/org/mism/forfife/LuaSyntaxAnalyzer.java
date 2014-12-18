@@ -64,14 +64,19 @@ import org.mism.forfife.visitors.LuaCompletionVisitor;
  * 
  * @author tr1nergy
  */
-class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
+public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
 	boolean ok;
+	int lastPosition;
 
 	List<LuaCompletionVisitor> visitors = Collections.emptyList();
 
 	public void setVisitors(List<LuaCompletionVisitor> visitors) {
 		this.visitors = visitors;
+	}
+	
+	public List<LuaCompletionVisitor> getVisitors() {
+		return visitors;
 	}
 
 	public LuaSyntaxAnalyzer() {
@@ -93,8 +98,8 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	public boolean initCompletions(CaretInfo info,
 			Map<LuaResource, LuaSyntaxInfo> includes) {
 		try {
-			if (loader.hasModifications() || !ok) {
-
+			if (loader.hasModifications() || !ok || info.getPosition()!=lastPosition) {
+                lastPosition = info.getPosition();
 				String luaScript = getLuaScript();
 				endIdx = luaScript.trim().length() - 1;
 				ANTLRInputStream str = new ANTLRInputStream(new StringReader(
@@ -126,7 +131,7 @@ class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				Logging.debug("Loading included file " + res.getResourceLink());
 				LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer(this, res);
 				includes.put(res, nested);
-				nested.initCompletions(info, includes);
+				nested.initCompletions(CaretInfo.HOME, includes);
 			} catch (Exception e) {
 				Logging.error(
 						"Could not load resource " + res.getResourceLink(), e);

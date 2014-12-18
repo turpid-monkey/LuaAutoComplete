@@ -26,5 +26,5 @@
 package org.mism.forfife;
 
 enum CompletionType {
-	FUNCTION, VARIABLE, LANGUAGE
+	FUNCTION, VARIABLE, LANGUAGE, TABLE
 }

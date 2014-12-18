@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+import org.mism.forfife.visitors.AssignmentVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
 
@@ -334,6 +335,14 @@ public class LuaSyntaxAnalyzerTest {
 	public void forNNinPairsGoGlobal() throws Exception {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
 				"someVar = 5\nfor _, plot in ipairs(plots) do\n return 5\n end\n",
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:someVar;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void assignOrCurlyBrace() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"someVar = someVar or {}",
 				CaretInfo.HOME);
 		assertEquals("VARIABLE:someVar;", toString(an.getCompletions()));
 	}

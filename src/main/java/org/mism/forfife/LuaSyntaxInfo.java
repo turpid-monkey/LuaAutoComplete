@@ -42,7 +42,7 @@ public class LuaSyntaxInfo {
 	protected LuaResource resource;
 	protected LuaResourceLoader loader;
 	protected LuaResourceLoaderFactory factory;
-	
+
 	protected LuaSyntaxInfo parent;
 	protected LuaParser.ChunkContext context;
 	protected int endIdx;
@@ -53,18 +53,22 @@ public class LuaSyntaxInfo {
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
 	protected Set<LuaResource> includedResources = new HashSet<LuaResource>();
-	
+
 	public void setResourceLoaderFactory(LuaResourceLoaderFactory factory) {
 		this.factory = factory;
 	}
-	
+
+	public LuaResourceLoaderFactory getResourceLoaderFactory() {
+		return factory;
+	}
+
 	public String getLuaScript() throws Exception {
 		return loader.load();
 	}
 
 	public void setResource(LuaResource res) throws Exception {
 		this.resource = res;
-	    loader = factory.createLoader(res);
+		loader = factory.createLoader(res);
 	}
 
 	public Map<String, String> getDoxyGenMap() {

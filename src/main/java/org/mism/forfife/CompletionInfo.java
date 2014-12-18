@@ -102,6 +102,10 @@ class CompletionInfo {
 		return newInstance(null, CompletionType.LANGUAGE, txt, 0, 0, false);
 	}
 
+	static CompletionInfo newTableInstance(LuaResource res, String txt, int line, int pos, boolean local) {
+		return newInstance(res, CompletionType.TABLE, txt, line, pos, local);
+	}
+
 	public String toString() {
 		return getType().name() + ":" + getText();
 	}

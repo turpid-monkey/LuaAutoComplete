@@ -52,13 +52,9 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	StaticLuaCompletions staticCompletions = new StaticLuaCompletions(this);
 
-	LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
-	Map<LuaResource, LuaSyntaxInfo> includeCache = new HashMap<LuaResource, LuaSyntaxInfo>();
+	TextAreaManager textAreaManager = new TextAreaManager();
 
 	Map<String, String> typeMap = new HashMap<String, String>();
-
-	List<LuaCompletionVisitor> visitors = new ArrayList<LuaCompletionVisitor>();
-	LuaResourceLoaderFactory factory = new LuaResourceLoaderFactory();
 
 	public Map<String, String> getTypeMap() {
 		return typeMap;
@@ -76,18 +72,9 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	public LuaCompletionProvider() {
 		setParameterizedCompletionParams('(', ",", ')');
 		setAutoActivationRules(false, ":");
-		fillVisitors(visitors);
-		fillResourceLoaders(factory.getLoaders());
-		LuaResource res = new LuaResource("textArea:");
-		includeCache.put(res, analyzer);
-		analyzer.setVisitors(visitors);
-		analyzer.setResourceLoaderFactory(factory);
-		try {
-			analyzer.setResource(res);
-
-		} catch (Exception e) {
-			Logging.error("Could not instantiate root syntax analyzer", e);
-		}
+		fillVisitors(textAreaManager.getVisitors());
+		fillResourceLoaders(textAreaManager.getFactory().getLoaders());
+		JTextComponentResourceLoader.setTextAreaManager(textAreaManager);
 	}
 
 	protected String i18n(Object o) {
@@ -162,10 +149,12 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 
 	@Override
 	protected List<Completion> getCompletionsImpl(JTextComponent comp) {
-		JTextComponentResourceLoader.getTextAreas().add(comp);
+		Map<LuaResource, LuaSyntaxInfo> cache = textAreaManager
+				.getAnalyzerCache(comp);
+		LuaSyntaxAnalyzer analyzer = (LuaSyntaxAnalyzer) cache.get(new LuaResource("textArea:" + comp.hashCode()));
 		String alreadyEntered = getAlreadyEnteredText(comp);
 		List<Completion> completions = new ArrayList<Completion>();
-		fillCompletions(completions, alreadyEntered,
+		fillCompletions(analyzer, cache, completions, alreadyEntered,
 				getCaretInfoFor((RSyntaxTextArea) comp));
 		super.clear();
 		Logging.debug("Created " + completions.size() + " completions.");
@@ -173,14 +162,15 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		return super.getCompletionsImpl(comp);
 	}
 
-	protected void fillCompletions(List<Completion> completions,
-			String alreadyEntered, CaretInfo info) {
-		analyzer.initCompletions(info, includeCache);
+	protected void fillCompletions(LuaSyntaxAnalyzer analyzer,
+			Map<LuaResource, LuaSyntaxInfo> includes,
+			List<Completion> completions, String alreadyEntered, CaretInfo info) {
+		analyzer.initCompletions(info, includes);
 		handler.validChange(analyzer.getContext());
 		typeMap.clear();
 		typeMap.putAll(analyzer.getTypeMap());
 		completions.addAll(staticCompletions.getCompletions());
-		fillDynamicCompletions(completions, includeCache);
+		fillDynamicCompletions(completions, includes);
 	}
 
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {
