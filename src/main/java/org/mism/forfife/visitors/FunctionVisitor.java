@@ -23,26 +23,50 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package org.mism.forfife;
+package org.mism.forfife.visitors;
 
-import java.util.ArrayList;
-import java.util.List;
-import org.mism.forfife.lua.LuaParser;
+import java.util.HashSet;
 
-public class LuaCompletionHandler implements LuaCompletionListener {
-    
-    List<LuaCompletionListener> listeners = new ArrayList<LuaCompletionListener>();
+import org.mism.forfife.LuaParseTreeUtil;
+import org.mism.forfife.lua.LuaParser.StatContext;
 
-    @Override
-    public void validChange(LuaParser.ChunkContext lua) {
-        for (LuaCompletionListener l: listeners)
-        {
-            l.validChange(lua);
-        }
-    }
-    
-    public void addListener(LuaCompletionListener l)
-    {
-        listeners.add(l);
-    }
+public class FunctionVisitor extends LuaCompletionVisitor {
+
+	static String FUNCTION = "function";
+
+	@Override
+	public Void visitStat(StatContext ctx) {
+		if (isFunctionCtx(ctx)) {
+			StatContext parent = getParentFunctionCtx(ctx);
+			if (parent != null) {
+				String type = funcName(parent);
+
+				if (!info.getTables().containsKey(type)) {
+					info.getTables().put(type, new HashSet<String>());
+				}
+				String member = funcName(ctx);
+				info.getTables().get(type).add(member);
+			}
+		}
+		return super.visitStat(ctx);
+	}
+
+	boolean isFunctionCtx(StatContext ctx) {
+		String start = ctx.getStart().getText();
+		return FUNCTION.equals(start);
+	}
+
+	StatContext getParentFunctionCtx(StatContext ctx) {
+		StatContext parent = ctx;
+		while ((parent = LuaParseTreeUtil.getParentStatContext(parent)) != null) {
+			if (isFunctionCtx(parent))
+				return parent;
+		}
+		return null;
+	}
+
+	String funcName(StatContext ctx) {
+		assert isFunctionCtx(ctx);
+		return ctx.getChild(1).getText();
+	}
 }

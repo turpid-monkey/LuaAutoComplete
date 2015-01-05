@@ -87,4 +87,32 @@ public class VisitorTests {
 		assertEquals("SomeClass", info.getTypeMap().get("someVar"));
 	}
 
+	@Test
+	public void nestedFunctions() throws Exception {
+		String script = "function test ()\n" + "   n = 1\n"
+				+ "   function member_func()\n" + "     n=n+1\n" + "   end\n"
+				+ "end\n";
+		ChunkContext ctx = LuaParseTreeUtil.parse(script);
+		LuaSyntaxInfo info = new LuaSyntaxInfo();
+		FunctionVisitor visitor = new FunctionVisitor();
+		visitor.setInfo(info);
+		visitor.visit(ctx);
+		assertEquals("member_func", info.getTables().get("test").iterator()
+				.next());
+	}
+
+	@Test
+	public void nestedInlineFunction() throws Exception {
+		String script = "someVar = function()\n" + "   n = 1\n"
+				+ "   function member_func()\n" + "     n=n+1\n" + "   end\n"
+				+ "end\n";
+		ChunkContext ctx = LuaParseTreeUtil.parse(script);
+		LuaSyntaxInfo info = new LuaSyntaxInfo();
+		FunctionVisitor visitor = new FunctionVisitor();
+		visitor.setInfo(info);
+		visitor.visit(ctx);
+		assertEquals("member_func", info.getTables().get("test").iterator()
+				.next());
+	}
+
 }

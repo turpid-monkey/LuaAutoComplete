@@ -61,8 +61,6 @@ import org.mism.forfife.visitors.LuaCompletionVisitor;
 
 /**
  * Parses a script and tries to collect all relevant data for proposals.
- * 
- * @author tr1nergy
  */
 public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
@@ -74,7 +72,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	public void setVisitors(List<LuaCompletionVisitor> visitors) {
 		this.visitors = visitors;
 	}
-	
+
 	public List<LuaCompletionVisitor> getVisitors() {
 		return visitors;
 	}
@@ -98,8 +96,9 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	public boolean initCompletions(CaretInfo info,
 			Map<LuaResource, LuaSyntaxInfo> includes) {
 		try {
-			if (loader.hasModifications() || !ok || info.getPosition()!=lastPosition) {
-                lastPosition = info.getPosition();
+			if (loader.hasModifications() || !ok
+					|| info.getPosition() != lastPosition) {
+				lastPosition = info.getPosition();
 				String luaScript = getLuaScript();
 				endIdx = luaScript.trim().length() - 1;
 				ANTLRInputStream str = new ANTLRInputStream(new StringReader(
@@ -125,16 +124,22 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			ok = false;
 		}
 		for (LuaResource res : includedResources) {
-			if (includes.containsKey(res))
-				continue;
-			try {
-				Logging.debug("Loading included file " + res.getResourceLink());
-				LuaSyntaxAnalyzer nested = new LuaSyntaxAnalyzer(this, res);
-				includes.put(res, nested);
+			LuaSyntaxAnalyzer nested;
+			if (includes.containsKey(res)) {
+				nested = (LuaSyntaxAnalyzer) includes.get(res);
 				nested.initCompletions(CaretInfo.HOME, includes);
-			} catch (Exception e) {
-				Logging.error(
-						"Could not load resource " + res.getResourceLink(), e);
+			} else {
+				try {
+					Logging.debug("Loading included file "
+							+ res.getResourceLink());
+					nested = new LuaSyntaxAnalyzer(this, res);
+					includes.put(res, nested);
+					nested.initCompletions(CaretInfo.HOME, includes);
+				} catch (Exception e) {
+					Logging.error(
+							"Could not load resource " + res.getResourceLink(),
+							e);
+				}
 			}
 		}
 		return ok;
@@ -235,10 +240,11 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			addFunction(funcName, ctx, false);
 
 		}
-		
+
 		@Override
 		public void enterStat(StatContext ctx) {
-			if (LOCAL.equals(start(ctx))) return;
+			if (LOCAL.equals(start(ctx)))
+				return;
 			pushScope(ctx);
 		}
 
@@ -268,8 +274,10 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 					addFunction(localFunction, ctx, true);
 				}
 			}
-			if (LOCAL.equals(startText)) return;
-			popScope(ctx.getStart().getStartIndex(), ctx.getStop().getStopIndex());
+			if (LOCAL.equals(startText))
+				return;
+			popScope(ctx.getStart().getStartIndex(), ctx.getStop()
+					.getStopIndex());
 		}
 
 		@Override
@@ -364,7 +372,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			} else {
 				startOffset = start.getStopIndex();
 			}
-			popScope(startOffset, (stop!=null?stop.getStopIndex():endIdx));
+			popScope(startOffset, (stop != null ? stop.getStopIndex() : endIdx));
 		}
 	}
 }

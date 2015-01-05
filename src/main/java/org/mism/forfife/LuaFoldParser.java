@@ -44,8 +44,6 @@ import org.mism.forfife.lua.LuaParser;
  * Register this class with
  * org.fife.ui.rsyntaxtextarea.folding.FoldParserManager.get() singleton
  * instance.
- * 
- * @author tr1nergy
  *
  */
 public class LuaFoldParser implements FoldParser {

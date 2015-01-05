@@ -27,8 +27,6 @@ package org.mism.forfife;
 
 /**
  * Represents the caret position in a text field and whether text is selected etc.
- * 
- * @author tr1nergy
  */
 public class CaretInfo {
 	

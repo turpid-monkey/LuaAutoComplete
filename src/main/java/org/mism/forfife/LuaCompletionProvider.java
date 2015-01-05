@@ -30,11 +30,10 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import javax.swing.Icon;
 import javax.swing.text.JTextComponent;
 
-import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
 import org.fife.ui.autocomplete.FunctionCompletion;
@@ -44,6 +43,7 @@ import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.mism.forfife.res.JTextComponentResourceLoader;
 import org.mism.forfife.visitors.AssignmentVisitor;
 import org.mism.forfife.visitors.DoxygenVisitor;
+import org.mism.forfife.visitors.FunctionVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
 
@@ -131,7 +131,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				varCompl.setIcon(IconLib.instance().getVariableIcon());
 				completions.add(varCompl);
 				break;
-			case LANGUAGE:
+			default:
 				throw new IllegalArgumentException("Not yet supported.");
 
 			}
@@ -145,6 +145,14 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			completions.addAll(initDynamicCompletions(info.getCompletions(),
 					info.getFunctionParams(), info.getDoxyGenMap()));
 		}
+		
+
+		Map<String, Set<String>> tables = new HashMap<String, Set<String>>();
+		for (LuaSyntaxInfo info : luaFiles.values())
+		{ 
+			tables.putAll(info.getTables());
+		}
+		System.out.println(tables);
 	}
 
 	@Override
@@ -177,6 +185,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		visitors.add(new RequireVisitor());
 		visitors.add(new DoxygenVisitor());
 		visitors.add(new AssignmentVisitor());
+		visitors.add(new FunctionVisitor());
 	}
 
 	protected void fillResourceLoaders(

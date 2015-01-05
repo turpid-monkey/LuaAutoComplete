@@ -31,9 +31,6 @@ import java.util.List;
 /**
  * Yet another logging implementation. Use Logging.instance().getLoggers() to
  * chance logging behaviour.
- * 
- * @author tr1nergy
- *
  */
 public final class Logging {
 

@@ -27,10 +27,6 @@ package org.mism.forfife;
 
 import org.mism.forfife.lua.LuaParser;
 
-/**
- *
- * @author tr1nergy
- */
 interface LuaCompletionListener {
     void validChange(LuaParser.ChunkContext lua); 
 }

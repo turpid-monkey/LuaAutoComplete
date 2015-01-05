@@ -36,6 +36,9 @@ import org.fife.ui.autocomplete.FunctionCompletion;
 import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.fife.ui.autocomplete.ShorthandCompletion;
 
+/**
+ * @author Martin Rupp
+ */
 public class StaticLuaCompletions {
 
 	String[][] completionsTable = {

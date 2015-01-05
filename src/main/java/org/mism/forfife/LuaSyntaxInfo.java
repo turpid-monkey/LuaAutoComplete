@@ -51,6 +51,8 @@ public class LuaSyntaxInfo {
 	protected Map<String, List<Parameter>> functionParams = new TreeMap<String, List<Parameter>>();
 	protected Map<String, String> typeMap = new HashMap<String, String>();
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
+	
+	protected Map<String, Set<String>> tables = new HashMap<String, Set<String>>();
 
 	protected Set<LuaResource> includedResources = new HashSet<LuaResource>();
 
@@ -122,6 +124,10 @@ public class LuaSyntaxInfo {
 
 	public Map<String, String> getTypeMap() {
 		return typeMap;
+	}
+	
+	public Map<String, Set<String>> getTables() {
+		return tables;
 	}
 
 	public void setTypeMap(Map<String, String> typeMap) {

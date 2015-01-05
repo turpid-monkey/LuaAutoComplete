@@ -25,10 +25,8 @@
  */
 package org.mism.forfife.visitors;
 
-import static org.mism.forfife.LuaParseTreeUtil.line;
 import static org.mism.forfife.LuaParseTreeUtil.start;
 
-import org.mism.forfife.Logging;
 import org.mism.forfife.LuaParseTreeUtil;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.PrefixexpContext;
