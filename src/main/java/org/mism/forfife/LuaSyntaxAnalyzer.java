@@ -124,6 +124,8 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			ok = false;
 		}
 		for (LuaResource res : includedResources) {
+			if (res.equals(resource))
+				continue;
 			LuaSyntaxAnalyzer nested;
 			if (includes.containsKey(res)) {
 				nested = (LuaSyntaxAnalyzer) includes.get(res);

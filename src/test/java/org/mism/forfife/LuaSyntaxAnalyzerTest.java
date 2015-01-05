@@ -70,7 +70,9 @@ public class LuaSyntaxAnalyzerTest {
 	public static LuaSyntaxAnalyzer createAndRunTestAnalyzer(String script,
 			CaretInfo info, LuaCompletionVisitor... visitors) throws Exception {
 		LuaSyntaxAnalyzer an = createTestAnalyzer(script, info, visitors);
-		an.initCompletions(info, new HashMap<LuaResource, LuaSyntaxInfo>());
+		Map<LuaResource, LuaSyntaxInfo> includes = new HashMap<LuaResource, LuaSyntaxInfo>();
+		includes.put(new LuaResource("this"), an);
+		an.initCompletions(info, includes);
 		return an;
 	}
 
