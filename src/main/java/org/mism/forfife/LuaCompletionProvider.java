@@ -84,7 +84,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	protected List<Completion> initDynamicCompletions(
 			Collection<CompletionInfo> infos,
 			Map<String, List<Parameter>> functionParams,
-			Map<String, String> functionDescr) {
+			Map<String, String> functionDescr, Map<String, Set<String>> tables) {
 		List<Completion> completions = new ArrayList<Completion>();
 		for (CompletionInfo comp : infos) {
 			switch (comp.getType()) {
@@ -114,6 +114,11 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				completions.add(fc);
 				break;
 			case VARIABLE:
+				if (tables.containsKey(comp.getText()))
+				{
+					// ignore this variable
+					break;
+				}
 				VariableCompletion varCompl = new VariableCompletion(this,
 						comp.getText(), "variable");
 				varCompl.setRelevance(9000);
@@ -143,16 +148,8 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			Map<LuaResource, LuaSyntaxInfo> luaFiles) {
 		for (LuaSyntaxInfo info : luaFiles.values()) {
 			completions.addAll(initDynamicCompletions(info.getCompletions(),
-					info.getFunctionParams(), info.getDoxyGenMap()));
+					info.getFunctionParams(), info.getDoxyGenMap(), info.getTables()));
 		}
-		
-
-		Map<String, Set<String>> tables = new HashMap<String, Set<String>>();
-		for (LuaSyntaxInfo info : luaFiles.values())
-		{ 
-			tables.putAll(info.getTables());
-		}
-		System.out.println(tables);
 	}
 
 	@Override

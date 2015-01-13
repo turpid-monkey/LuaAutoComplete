@@ -27,10 +27,13 @@ package org.mism.forfife.visitors;
 
 import static org.mism.forfife.LuaParseTreeUtil.start;
 
+import java.util.HashSet;
+
 import org.mism.forfife.LuaParseTreeUtil;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
+import org.mism.forfife.lua.LuaParser.TableconstructorContext;
 
 public class AssignmentVisitor extends LuaCompletionVisitor {
 
@@ -43,6 +46,15 @@ public class AssignmentVisitor extends LuaCompletionVisitor {
 				info.getTypeMap().put(start(statCtx), start(ctx));
 				//Logging.debug("Found a possible type in line " + line(ctx)
 				//		+ ": var " + start(statCtx) + " = " + start(ctx));
+			}
+			if (statCtx.getChild(2).getText().endsWith("or{}"))
+			{
+				//hit
+				String var = start(statCtx);
+				if (!info.getTables().containsKey(var))
+				{
+					info.getTables().put(start(statCtx), new HashSet<String>());
+				}
 			}
 		}
 		return null;

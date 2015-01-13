@@ -47,17 +47,30 @@ public class LuaSyntaxInfo {
 	protected LuaParser.ChunkContext context;
 	protected int endIdx;
 
+	protected String classContext;
 	protected Stack<Map<String, CompletionInfo>> relevantStack = new Stack<Map<String, CompletionInfo>>();
 	protected Map<String, List<Parameter>> functionParams = new TreeMap<String, List<Parameter>>();
 	protected Map<String, String> typeMap = new HashMap<String, String>();
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
-	
+
 	protected Map<String, Set<String>> tables = new HashMap<String, Set<String>>();
+	protected Map<String, Set<CompletionInfo>> classes = new HashMap<String, Set<CompletionInfo>>();
 
 	protected Set<LuaResource> includedResources = new HashSet<LuaResource>();
 
 	public void setResourceLoaderFactory(LuaResourceLoaderFactory factory) {
 		this.factory = factory;
+	}
+
+	public Map<String, Set<CompletionInfo>> getClasses() {
+		return classes;
+	}
+
+	public Set<CompletionInfo> getClassMembers(String className) {
+		if (!getClasses().containsKey(className)) {
+			getClasses().put(className, new HashSet<CompletionInfo>());
+		}
+		return getClasses().get(className);
 	}
 
 	public LuaResourceLoaderFactory getResourceLoaderFactory() {
@@ -125,7 +138,7 @@ public class LuaSyntaxInfo {
 	public Map<String, String> getTypeMap() {
 		return typeMap;
 	}
-	
+
 	public Map<String, Set<String>> getTables() {
 		return tables;
 	}
@@ -158,5 +171,13 @@ public class LuaSyntaxInfo {
 
 	public LuaResource getResource() {
 		return resource;
+	}
+
+	public boolean hasClassContext() {
+		return classContext != null;
+	}
+
+	public String getClassContext() {
+		return classContext;
 	}
 }

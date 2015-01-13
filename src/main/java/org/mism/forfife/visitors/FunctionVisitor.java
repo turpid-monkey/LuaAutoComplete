@@ -27,7 +27,10 @@ package org.mism.forfife.visitors;
 
 import java.util.HashSet;
 
+import org.mism.forfife.Logging;
 import org.mism.forfife.LuaParseTreeUtil;
+import org.mism.forfife.lua.LuaParser;
+import org.mism.forfife.lua.LuaParser.FunctiondefContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 
 public class FunctionVisitor extends LuaCompletionVisitor {
@@ -37,18 +40,23 @@ public class FunctionVisitor extends LuaCompletionVisitor {
 	@Override
 	public Void visitStat(StatContext ctx) {
 		if (isFunctionCtx(ctx)) {
-			StatContext parent = getParentFunctionCtx(ctx);
-			if (parent != null) {
-				String type = funcName(parent);
-
-				if (!info.getTables().containsKey(type)) {
-					info.getTables().put(type, new HashSet<String>());
-				}
-				String member = funcName(ctx);
-				info.getTables().get(type).add(member);
+			String functionName = funcName(ctx);
+			if (functionName.contains(":")) {
+				String className = functionName.substring(0,
+						functionName.indexOf(":"));
+				String memberFuncName = functionName.substring(functionName
+						.indexOf(":") + 1);
+				Logging.debug("Class: " + className + " append member "
+						+ memberFuncName);
 			}
+
 		}
 		return super.visitStat(ctx);
+	}
+
+	private FunctiondefContext getParentFunctiondefContext(StatContext ctx) {
+		return LuaParseTreeUtil.getParentRuleContext(ctx,
+				LuaParser.RULE_functiondef, FunctiondefContext.class);
 	}
 
 	boolean isFunctionCtx(StatContext ctx) {

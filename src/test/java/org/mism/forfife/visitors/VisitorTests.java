@@ -88,32 +88,52 @@ public class VisitorTests {
 	}
 
 	@Test
-	public void nestedFunctions() throws Exception {
-		String script = "function test ()\n" + "   n = 1\n"
-				+ "   function member_func()\n" + "     n=n+1\n" + "   end\n"
+	public void classMemberStyleFunction() throws Exception {
+		String script = "function Account:withdraw(amount)\n"
+				+ "   self.balance = self.balance - amount\n"
 				+ "end\n";
 		ChunkContext ctx = LuaParseTreeUtil.parse(script);
 		LuaSyntaxInfo info = new LuaSyntaxInfo();
 		FunctionVisitor visitor = new FunctionVisitor();
 		visitor.setInfo(info);
 		visitor.visit(ctx);
-		assertEquals("member_func", info.getTables().get("test").iterator()
-				.next());
 	}
 
 	@Test
-	public void nestedInlineFunction() throws Exception {
-		String script = "someVar = function()\n" + "   n = 1\n"
-				+ "   function member_func()\n" + "     n=n+1\n" + "   end\n"
-				+ "end\n";
+	public void assignTable() throws Exception {
+		String script = "util = util or {}";
 		ChunkContext ctx = LuaParseTreeUtil.parse(script);
 		LuaSyntaxInfo info = new LuaSyntaxInfo();
-		FunctionVisitor visitor = new FunctionVisitor();
+		AssignmentVisitor visitor = new AssignmentVisitor();
 		visitor.setInfo(info);
 		visitor.visit(ctx);
-		// TODO
-		// assertEquals("member_func", info.getTables().get("test").iterator()
-		//		.next());
+		assertEquals(1, info.getTables().size());
 	}
 
+	@Test
+	public void makeClassStyleTable() throws Exception {
+		String script = "Account = {}\n" + "Account.__index = Account\n"
+				+ "function Account.create(balance)\n" + "   local acnt = {}\n"
+				+ "   setmetatable(acnt,Account)\n"
+				+ "   acnt.balance = balance\n" + "   return acnt\n" + "end\n"
+				+ "function Account:withdraw(amount)\n"
+				+ "   self.balance = self.balance - amount\n" + "end\n";
+		ChunkContext ct = LuaParseTreeUtil.parse(script);
+		LuaSyntaxInfo info = new LuaSyntaxInfo();
+
+	}
+
+	@Test
+	public void tableConstructor() throws Exception {
+		String script = "a = { b = 5, value = 10}";
+		ChunkContext ctx = LuaParseTreeUtil.parse(script);
+		LuaSyntaxInfo info = new LuaSyntaxInfo();
+		TableConstructorVisitor visitor = new TableConstructorVisitor();
+		visitor.setInfo(info);
+		visitor.visit(ctx);
+		assertEquals(1, info.getTables().size());
+		assertEquals(2, info.getTables().get("a").size());
+		assertTrue(info.getTables().get("a").contains("b"));
+		assertTrue(info.getTables().get("a").contains("value"));
+	}
 }

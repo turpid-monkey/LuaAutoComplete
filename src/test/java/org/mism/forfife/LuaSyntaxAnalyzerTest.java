@@ -8,11 +8,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
-import org.mism.forfife.visitors.AssignmentVisitor;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 import org.mism.forfife.visitors.RequireVisitor;
 
@@ -200,10 +201,9 @@ public class LuaSyntaxAnalyzerTest {
 		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.HOME;
 		an = createAndRunTestAnalyzer("q=5\nfor i=1,10 do\n q=q*q \n end\n", c);
-		assertEquals("VARIABLE:q;",
-				toString(an.getCompletions()));
+		assertEquals("VARIABLE:q;", toString(an.getCompletions()));
 	}
-	
+
 	@Test
 	public void testVarsInForLoop2() throws Exception {
 		LuaSyntaxAnalyzer an;
@@ -340,12 +340,91 @@ public class LuaSyntaxAnalyzerTest {
 				CaretInfo.HOME);
 		assertEquals("VARIABLE:someVar;", toString(an.getCompletions()));
 	}
-	
+
 	@Test
 	public void assignOrCurlyBrace() throws Exception {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
-				"someVar = someVar or {}",
-				CaretInfo.HOME);
+				"someVar = someVar or {}", CaretInfo.HOME);
 		assertEquals("VARIABLE:someVar;", toString(an.getCompletions()));
+	}
+
+	@Test
+	public void makeClassStyleTable() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("Account = {}\n"
+				+ "Account.__index = Account\n"
+				+ "function Account.create(balance)\n" + "   local acnt = {}\n"
+				+ "   setmetatable(acnt,Account)\n"
+				+ "   acnt.balance = balance\n" + "   return acnt\n" + "end\n"
+				+ "function Account:withdraw(amount)\n"
+				+ "   self.balance = self.balance - amount\n" + "end\n",
+				CaretInfo.HOME);
+		assertEquals(
+				"FUNCTION:Account.create; FUNCTION:Account:withdraw; VARIABLE:Account; VARIABLE:Account.__index;",
+				toString(an.getCompletions()));
+
+	}
+	
+	@Test public void localTable() throws Exception
+	{
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("local acnt = {}\nacnt.balance = 100\n", CaretInfo.HOME);
+		assertEquals(
+				"local VARIABLE:acnt; local VARIABLE:acnt.balance;",
+				toString(an.getCompletions()));
+	}
+
+	@Test
+	public void testTableConstructor() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"a = { b = 5 , value= 10}", CaretInfo.HOME);
+		assertEquals("VARIABLE:a; VARIABLE:a.b; VARIABLE:a.value;",
+				toString(an.getCompletions()));
+	}
+
+	@Test
+	public void testLocalTableConstructorOutOfScope() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"function x()\n local a = { b = 5 , value= 10} \n end\n",
+				CaretInfo.HOME);
+		assertEquals("FUNCTION:x;", toString(an.getCompletions()));
+	}
+
+	@Test
+	public void testLocalTableConstructorWithinScope() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"function x()\n local a = { b = 5 , value= 10} \n end\n",
+				CaretInfo.newInstance(14));
+		assertEquals(
+				"FUNCTION:x; local VARIABLE:a; local VARIABLE:a.b; local VARIABLE:a.value;",
+				toString(an.getCompletions()));
+	}
+
+	@Test
+	public void classMemberFunctions() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"function Account:withdraw(amount)\n self.balance = self.balance - amount\n end\n",
+				CaretInfo.newInstance(35));
+		assertEquals(1, an.getClasses().size());
+		assertEquals(2, an.getClasses().get("Account").size());
+        List<String> replTxt = new ArrayList<String>();
+		for (CompletionInfo info : an.getClassMembers("Account"))
+		{
+			replTxt.add(info.getText());
+		}
+		assertEquals(true, replTxt.contains("Account:withdraw"));
+		assertEquals(true, replTxt.contains("self.balance"));
+		assertEquals("FUNCTION:Account:withdraw; local VARIABLE:amount; local VARIABLE:self.balance;",
+				toString(an.getCompletions()));
+		assertEquals(true, an.hasClassContext());
+		assertEquals("Account", an.getClassContext());
+	}
+	
+	@Test
+	public void classMemberFunctionsOutOfScope() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"function Account:withdraw(amount)\n self.balance = self.balance - amount\n end\n",
+				CaretInfo.HOME);
+		assertEquals(1, an.getClasses().size());
+		assertEquals(2, an.getClasses().get("Account").size());
+		assertEquals(false, an.hasClassContext());
 	}
 }

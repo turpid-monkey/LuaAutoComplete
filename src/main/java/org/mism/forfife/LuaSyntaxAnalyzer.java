@@ -37,8 +37,10 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 
@@ -54,9 +56,12 @@ import org.mism.forfife.lua.LuaBaseListener;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.BlockContext;
+import org.mism.forfife.lua.LuaParser.FieldContext;
+import org.mism.forfife.lua.LuaParser.FieldlistContext;
 import org.mism.forfife.lua.LuaParser.FuncbodyContext;
 import org.mism.forfife.lua.LuaParser.NamelistContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
+import org.mism.forfife.lua.LuaParser.TableconstructorContext;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
 
 /**
@@ -149,6 +154,8 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
 	private class LuaListener extends LuaBaseListener {
 
+		private static final String COLON = ":";
+		private static final String SELF = "self";
 		private static final String LEFT_BRACKET = "(";
 		private static final String FUNCTION = "function";
 		private static final String LOCAL = "local";
@@ -163,7 +170,18 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			this.info = info;
 		}
 
+		boolean isMemberFunction(String funcName) {
+			return funcName.contains(COLON);
+		}
+
+		String extractClassName(String funcName) {
+			return funcName.substring(0, funcName.indexOf(COLON));
+		}
+
 		boolean isDeclaredLocal(String name) {
+			if (name.contains(".")) {
+				name = name.substring(0, name.indexOf("."));
+			}
 			if (global.containsKey(name))
 				return false;
 			for (int i = 0; i < scopes.size(); i++) {
@@ -189,15 +207,44 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			}
 		}
 
-		void addVariable(String name, ParserRuleContext ctx, boolean local) {
+		Map<String, CompletionInfo> findScope(String name) {
+			if (name.contains(".")) {
+				name = name.substring(0, name.indexOf("."));
+			}
+			if (global.containsKey(name))
+				return global;
+			for (int i = 0; i < scopes.size(); i++) {
+				if (scopes.get(i).containsKey(name)) {
+					return scopes.get(i);
+				}
+			}
+			return null;
+		}
 
+		void addVariable(String name, ParserRuleContext ctx, boolean local) {
 			CompletionInfo varInfo = CompletionInfo.newVariableInstance(
 					LuaSyntaxAnalyzer.this.getResource(), name, line(ctx),
-					col(ctx), local);
-			if (local || isDeclaredLocal(name)) {
+					col(ctx), local || isDeclaredLocal(name));
+			if (local) {
 				scopes.peek().put(name, varInfo);
+			} else if (isDeclaredLocal(name)) {
+				findScope(name).put(name, varInfo);
 			} else {
 				global.put(name, varInfo);
+			}
+			if (isClassMember(name)) {
+				StatContext statCtx = getParentStatContext(ctx);
+				if (statCtx != null
+						&& (statCtx = getParentStatContext(statCtx)) != null) {
+					String functionName = next(statCtx);
+					if (isMemberFunction(functionName)) {
+						String className = extractClassName(functionName);
+						Logging.debug("Found member var " + name
+								+ " for class '" + className + "'");
+						getClassMembers(className).add(varInfo);
+					}
+				}
+
 			}
 		}
 
@@ -208,6 +255,10 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			if (local) {
 				scopes.peek().put(name, funcInfo);
 			} else {
+				if (isMemberFunction(name)) {
+					String className = extractClassName(name);
+					getClassMembers(className).add(funcInfo);
+				}
 				global.put(name, funcInfo);
 			}
 
@@ -223,15 +274,55 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		}
 
 		@Override
+		public void exitTableconstructor(TableconstructorContext ctx) {
+			StatContext parent = LuaParseTreeUtil.getParentStatContext(ctx);
+			boolean local = false;
+			String tableName;
+			if (LOCAL.equals(start(parent))) {
+				tableName = next(parent);
+				local = true;
+			} else {
+				tableName = start(parent);
+			}
+			FieldlistContext fl = LuaParseTreeUtil.getChildRuleContext(ctx,
+					LuaParser.RULE_fieldlist, FieldlistContext.class);
+			List<String> entries = new ArrayList<String>();
+			if (fl != null) {
+				for (ParseTree rctx : fl.children) {
+					if (rctx instanceof FieldContext) {
+						entries.add(LuaParseTreeUtil.start((FieldContext) rctx));
+					}
+				}
+			}
+
+			// Save info about tables
+			if (!local) {
+				Set<String> set;
+				if (!getTables().containsKey(tableName)) {
+					getTables().put(tableName, new HashSet<String>());
+				}
+				set = getTables().get(tableName);
+
+				for (String entry : entries)
+					set.add(entry);
+			}
+			// Add variable completion
+			for (String entry : entries) {
+				addVariable(tableName + "." + entry, ctx, local);
+			}
+		}
+
+		@Override
 		public void exitVar(LuaParser.VarContext ctx) {
-			String varName = start(ctx);
+			String varName = txt(ctx);
 
 			// if it is a subrule of prefixExp, it might as well be a function
 			// call
 			if (!hasParentRuleContext(ctx, LuaParser.RULE_prefixexp)
 					&& !hasParentRuleContext(ctx, LuaParser.RULE_functioncall)) {
 				LuaParser.StatContext statCtx = getParentStatContext(ctx);
-				boolean local = statCtx != null && start(statCtx).equals(LOCAL);
+				boolean local = statCtx != null && start(statCtx).equals(LOCAL)
+						|| isClassMember(varName);
 				addVariable(varName, ctx, local);
 			}
 		}
@@ -240,7 +331,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		public void exitFuncname(LuaParser.FuncnameContext ctx) {
 			String funcName = txt(ctx);
 			addFunction(funcName, ctx, false);
-
+			checkStartClassContext(funcName);
 		}
 
 		@Override
@@ -271,7 +362,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 					addVariable(next(ctx), ctx, true);
 				} // else should be a namelist => handled by exitNamelist()
 			} else if (LOCAL.equals(startText)) {
-				if (ctx.getChild(1).getText().equals(FUNCTION)) {
+				if (FUNCTION.equals(next(ctx))) {
 					String localFunction = ctx.getChild(2).getText();
 					addFunction(localFunction, ctx, true);
 				}
@@ -280,6 +371,26 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				return;
 			popScope(ctx.getStart().getStartIndex(), ctx.getStop()
 					.getStopIndex());
+		}
+
+		void checkEndClassContext(String funcName) {
+			if (frozen)
+				return;
+			if (isMemberFunction(funcName)) {
+				classContext = null;
+			}
+		}
+
+		void checkStartClassContext(String funcName) {
+			if (frozen)
+				return;
+			if (isMemberFunction(funcName)) {
+				classContext = extractClassName(funcName);
+			}
+		}
+
+		boolean isClassMember(String variable) {
+			return variable.startsWith(SELF);
 		}
 
 		@Override
@@ -332,6 +443,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				}
 			}
 			popScope(ctx.getStart().getStopIndex(), stop.getStopIndex());
+			checkEndClassContext(currentFunction);
 		}
 
 		private void pushScope(ParserRuleContext ctx) {
