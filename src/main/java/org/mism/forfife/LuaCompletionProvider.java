@@ -114,8 +114,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				completions.add(fc);
 				break;
 			case VARIABLE:
-				if (tables.containsKey(comp.getText()))
-				{
+				if (tables.containsKey(comp.getText())) {
 					// ignore this variable
 					break;
 				}
@@ -148,7 +147,8 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			Map<LuaResource, LuaSyntaxInfo> luaFiles) {
 		for (LuaSyntaxInfo info : luaFiles.values()) {
 			completions.addAll(initDynamicCompletions(info.getCompletions(),
-					info.getFunctionParams(), info.getDoxyGenMap(), info.getTables()));
+					info.getFunctionParams(), info.getDoxyGenMap(),
+					info.getTables()));
 		}
 	}
 
@@ -156,11 +156,13 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 	protected List<Completion> getCompletionsImpl(JTextComponent comp) {
 		Map<LuaResource, LuaSyntaxInfo> cache = textAreaManager
 				.getAnalyzerCache(comp);
-		LuaSyntaxAnalyzer analyzer = (LuaSyntaxAnalyzer) cache.get(new LuaResource("textArea:" + comp.hashCode()));
+		LuaSyntaxAnalyzer analyzer = (LuaSyntaxAnalyzer) cache
+				.get(new LuaResource("textArea:" + comp.hashCode()));
 		String alreadyEntered = getAlreadyEnteredText(comp);
 		List<Completion> completions = new ArrayList<Completion>();
 		fillCompletions(analyzer, cache, completions, alreadyEntered,
 				getCaretInfoFor((RSyntaxTextArea) comp));
+		fillClassBasedCompletions(analyzer, alreadyEntered, completions);
 		super.clear();
 		Logging.debug("Created " + completions.size() + " completions.");
 		addCompletions(completions);
@@ -176,6 +178,49 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		typeMap.putAll(analyzer.getTypeMap());
 		completions.addAll(staticCompletions.getCompletions());
 		fillDynamicCompletions(completions, includes);
+	}
+
+	protected void fillClassBasedCompletions(LuaSyntaxAnalyzer analyzer,
+			String alreadyEntered, List<Completion> completions) {
+			for (String var : getTypeMap().keySet()) {
+				if (var.startsWith(alreadyEntered)
+						|| alreadyEntered.startsWith(var)) {
+					String type = getTypeMap().get(var);
+					Set<CompletionInfo> classMembers = analyzer.getClassMembers(type);
+					if (!classMembers.isEmpty()) {
+                        for  (CompletionInfo info : classMembers)
+                        {
+                        	if (info.getType() == CompletionType.FUNCTION)
+                        	{
+                        		FunctionCompletion fc = new FunctionCompletion(this,
+        							 info.getText().replace(type, var), "");
+        						fc.setShortDescription(info.getDescr());
+        						fc.setRelevance(10000);
+        						fc.setIcon(IconLib.instance().getMemberFunctionIcon());
+        						completions.add(fc);
+                        	} 
+                        }
+					}
+				}
+			}
+			if (analyzer.hasClassContext())
+			{
+				Set<CompletionInfo> classMembers = analyzer.getClassMembers(analyzer.getClassContext());
+				if (!classMembers.isEmpty()) {
+                    for  (CompletionInfo info : classMembers)
+                    {
+                    	if (info.getType() == CompletionType.VARIABLE)
+                    	{
+                    		VariableCompletion vc = new VariableCompletion(this,
+    							 info.getText(), "");
+    						vc.setShortDescription(info.getDescr());
+    						vc.setRelevance(10000);
+    						vc.setIcon(IconLib.instance().getVariableIcon());
+    						completions.add(vc);
+                    	} 
+                    }
+				}
+			}
 	}
 
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {

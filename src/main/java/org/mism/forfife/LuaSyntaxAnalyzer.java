@@ -100,6 +100,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	 */
 	public boolean initCompletions(CaretInfo info,
 			Map<LuaResource, LuaSyntaxInfo> includes) {
+		getClasses().clear();
 		try {
 			if (loader.hasModifications() || !ok
 					|| info.getPosition() != lastPosition) {

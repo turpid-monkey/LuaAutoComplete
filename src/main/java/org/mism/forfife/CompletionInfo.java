@@ -109,4 +109,9 @@ class CompletionInfo {
 	public String toString() {
 		return getType().name() + ":" + getText();
 	}
+	
+	@Override
+	public int hashCode() {
+		return toString().hashCode();
+	}
 }
