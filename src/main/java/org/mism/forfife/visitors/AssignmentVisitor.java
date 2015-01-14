@@ -33,7 +33,6 @@ import org.mism.forfife.LuaParseTreeUtil;
 import org.mism.forfife.lua.LuaParser;
 import org.mism.forfife.lua.LuaParser.PrefixexpContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
-import org.mism.forfife.lua.LuaParser.TableconstructorContext;
 
 public class AssignmentVisitor extends LuaCompletionVisitor {
 

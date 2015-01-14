@@ -51,6 +51,7 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import org.mism.forfife.lua.LuaBaseListener;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
@@ -166,6 +167,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		private static final String FUNCTION = "function";
 		private static final String LOCAL = "local";
 		private static final String FOR = "for";
+		private static final String IF = "if";
 
 		CaretInfo info;
 		boolean frozen = false;
@@ -290,13 +292,20 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			} else {
 				tableName = start(parent);
 			}
+			// inline declaration of a table in a for/if block, do nothing
+			if (FOR.equals(tableName) || IF.equals(tableName))
+				return;
+
 			FieldlistContext fl = LuaParseTreeUtil.getChildRuleContext(ctx,
 					LuaParser.RULE_fieldlist, FieldlistContext.class);
 			List<String> entries = new ArrayList<String>();
 			if (fl != null) {
 				for (ParseTree rctx : fl.children) {
 					if (rctx instanceof FieldContext) {
-						entries.add(LuaParseTreeUtil.start((FieldContext) rctx));
+						if (((FieldContext) rctx).getChild(1) instanceof TerminalNode) {
+							entries.add(LuaParseTreeUtil
+									.start((FieldContext) rctx));
+						}
 					}
 				}
 			}

@@ -8,10 +8,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.junit.Test;
 import org.mism.forfife.visitors.LuaCompletionVisitor;
@@ -56,6 +54,7 @@ public class LuaSyntaxAnalyzerTest {
 
 	public static LuaSyntaxAnalyzer createTestAnalyzer(String script,
 			CaretInfo info, LuaCompletionVisitor... visitors) throws Exception {
+		@SuppressWarnings("unchecked")
 		LuaResourceLoaderFactory factory = new LuaResourceLoaderFactory(
 				TextResourceLoader.class,
 				LuaSyntaxAnalyzerTest.TestRequireResourceLoader.class);
@@ -363,12 +362,12 @@ public class LuaSyntaxAnalyzerTest {
 				toString(an.getCompletions()));
 
 	}
-	
-	@Test public void localTable() throws Exception
-	{
-		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("local acnt = {}\nacnt.balance = 100\n", CaretInfo.HOME);
-		assertEquals(
-				"local VARIABLE:acnt; local VARIABLE:acnt.balance;",
+
+	@Test
+	public void localTable() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"local acnt = {}\nacnt.balance = 100\n", CaretInfo.HOME);
+		assertEquals("local VARIABLE:acnt; local VARIABLE:acnt.balance;",
 				toString(an.getCompletions()));
 	}
 
@@ -405,19 +404,19 @@ public class LuaSyntaxAnalyzerTest {
 				CaretInfo.newInstance(35));
 		assertEquals(1, an.getClasses().size());
 		assertEquals(2, an.getClasses().get("Account").size());
-        List<String> replTxt = new ArrayList<String>();
-		for (CompletionInfo info : an.getClassMembers("Account"))
-		{
+		List<String> replTxt = new ArrayList<String>();
+		for (CompletionInfo info : an.getClassMembers("Account")) {
 			replTxt.add(info.getText());
 		}
 		assertEquals(true, replTxt.contains("Account:withdraw"));
 		assertEquals(true, replTxt.contains("self.balance"));
-		assertEquals("FUNCTION:Account:withdraw; local VARIABLE:amount; local VARIABLE:self.balance;",
+		assertEquals(
+				"FUNCTION:Account:withdraw; local VARIABLE:amount; local VARIABLE:self.balance;",
 				toString(an.getCompletions()));
 		assertEquals(true, an.hasClassContext());
 		assertEquals("Account", an.getClassContext());
 	}
-	
+
 	@Test
 	public void classMemberFunctionsOutOfScope() throws Exception {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
@@ -426,5 +425,36 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals(1, an.getClasses().size());
 		assertEquals(2, an.getClasses().get("Account").size());
 		assertEquals(false, an.hasClassContext());
+	}
+
+	@Test
+	public void numberArrayTables() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("a = { 1, 2, 3, 4 }",
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:a;", toString(an.getCompletions()));
+	}
+
+	@Test
+	public void forLoopsWithIpair() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(
+				"for k, class in ipairs({\"GridFunctionGradientData\", \"GridFunctionNumberData\"}) do\n"
+						+ " -- loop\n" + "end\n", CaretInfo.HOME);
+		assertEquals("local VARIABLE:class; local VARIABLE:k;",
+				toString(an.getCompletions()));
+	}
+
+	@Test
+	public void tableArray() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("A = {}\n"
+				+ "A[1] = {-1, 1}\n" + "A[2] = {-1, 1}\n" + "A[3] = {-1, 1}\n",
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:A; VARIABLE:A[1]; VARIABLE:A[2]; VARIABLE:A[3];", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void stringArrayTables() throws Exception {
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("a = { \"a\", \"b\" }",
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:a;", toString(an.getCompletions()));
 	}
 }

@@ -26,19 +26,14 @@
 package org.mism.forfife;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.swing.text.JTextComponent;
 
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.DefaultCompletionProvider;
-import org.fife.ui.autocomplete.FunctionCompletion;
-import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
-import org.fife.ui.autocomplete.VariableCompletion;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.mism.forfife.res.JTextComponentResourceLoader;
 import org.mism.forfife.visitors.AssignmentVisitor;
@@ -77,82 +72,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		JTextComponentResourceLoader.setTextAreaManager(textAreaManager);
 	}
 
-	protected List<Completion> initDynamicCompletions(
-			Collection<CompletionInfo> infos,
-			Map<String, List<FunctionParameter>> functionParams,
-			Map<String, String> functionDescr, Map<String, Set<String>> tables) {
-		List<Completion> completions = new ArrayList<Completion>();
-		for (CompletionInfo comp : infos) {
-			switch (comp.getType()) {
-			case FUNCTION:
-				FunctionCompletion fc = new FunctionCompletion(this,
-						comp.getText(), "function");
-				fc.setRelevance(4000);
-				List<FunctionParameter> fparams = functionParams.get(comp.getText());
-				List<Parameter> params = new ArrayList<Parameter>();
-				for (FunctionParameter parm : fparams)
-				{
-					params.add(new Parameter(null, parm.getParamName()));
-				}
-				fc.setParams(params);
-
-				StringBuffer shortDescr = new StringBuffer();
-				if (functionDescr.containsKey(comp.getText())) {
-					shortDescr.append(functionDescr.get(comp.getText()));
-				}
-				if (comp.getResource() != null
-						&& !comp.getResource().getResourceLink()
-								.startsWith("textArea")) {
-					shortDescr.append("<p>included from "
-							+ comp.getResource().getResourceLink() + ", line "
-							+ comp.getLine());
-				} else {
-					shortDescr.append("<p>from line " + comp.getLine());
-				}
-
-				fc.setShortDescription(shortDescr.toString());
-				fc.setIcon(IconLib.instance().getFunctionIcon());
-				completions.add(fc);
-				break;
-			case VARIABLE:
-				if (tables.containsKey(comp.getText())) {
-					// ignore this variable
-					break;
-				}
-				VariableCompletion varCompl = new VariableCompletion(this,
-						comp.getText(), "variable");
-				varCompl.setRelevance(9000);
-				StringBuffer summary = new StringBuffer();
-				if (comp.getResource() != null
-						&& !comp.getResource().getResourceLink()
-								.startsWith("textArea")) {
-					summary.append("<p>included from "
-							+ comp.getResource().getResourceLink() + ", line "
-							+ comp.getLine());
-				} else {
-					summary.append("<p>from line " + comp.getLine());
-				}
-				varCompl.setShortDescription(summary.toString());
-				varCompl.setIcon(IconLib.instance().getVariableIcon());
-				completions.add(varCompl);
-				break;
-			default:
-				throw new IllegalArgumentException("Not yet supported.");
-
-			}
-		}
-		return completions;
-	}
-
-	protected void fillDynamicCompletions(List<Completion> completions,
-			Map<LuaResource, LuaSyntaxInfo> luaFiles) {
-		for (LuaSyntaxInfo info : luaFiles.values()) {
-			completions.addAll(initDynamicCompletions(info.getCompletions(),
-					info.getFunctionParams(), info.getDoxyGenMap(),
-					info.getTables()));
-		}
-	}
-
+	
 	@Override
 	protected List<Completion> getCompletionsImpl(JTextComponent comp) {
 		Map<LuaResource, LuaSyntaxInfo> cache = textAreaManager
@@ -160,13 +80,24 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		LuaSyntaxAnalyzer analyzer = (LuaSyntaxAnalyzer) cache
 				.get(new LuaResource("textArea:" + comp.hashCode()));
 		String alreadyEntered = getAlreadyEnteredText(comp);
+		
 		List<Completion> completions = new ArrayList<Completion>();
-		fillCompletions(analyzer, cache, completions, alreadyEntered,
-				getCaretInfoFor((RSyntaxTextArea) comp));
-		fillClassBasedCompletions(analyzer, alreadyEntered, completions);
+		LuaCompletionsBuilder builder = new LuaCompletionsBuilder();
+		FifeCompletions fifes = new FifeCompletions(this);
+		builder.fillCompletions(analyzer, cache, fifes, alreadyEntered, getCaretInfoFor((RSyntaxTextArea) comp));
+		
 		super.clear();
+		
 		Logging.debug("Created " + completions.size() + " completions.");
+		handler.validChange(analyzer.getContext());
+		typeMap.clear();
+		typeMap.putAll(analyzer.getTypeMap());
+		
+		completions.addAll(staticCompletions.getCompletions());
+		completions.addAll(fifes.getCompletions());
+		
 		addCompletions(completions);
+		
 		return super.getCompletionsImpl(comp);
 	}
 
@@ -174,54 +105,7 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 			Map<LuaResource, LuaSyntaxInfo> includes,
 			List<Completion> completions, String alreadyEntered, CaretInfo info) {
 		analyzer.initCompletions(info, includes);
-		handler.validChange(analyzer.getContext());
-		typeMap.clear();
-		typeMap.putAll(analyzer.getTypeMap());
-		completions.addAll(staticCompletions.getCompletions());
-		fillDynamicCompletions(completions, includes);
-	}
-
-	protected void fillClassBasedCompletions(LuaSyntaxAnalyzer analyzer,
-			String alreadyEntered, List<Completion> completions) {
-			for (String var : getTypeMap().keySet()) {
-				if (var.startsWith(alreadyEntered)
-						|| alreadyEntered.startsWith(var)) {
-					String type = getTypeMap().get(var);
-					Set<CompletionInfo> classMembers = analyzer.getClassMembers(type);
-					if (!classMembers.isEmpty()) {
-                        for  (CompletionInfo info : classMembers)
-                        {
-                        	if (info.getType() == CompletionType.FUNCTION)
-                        	{
-                        		FunctionCompletion fc = new FunctionCompletion(this,
-        							 info.getText().replace(type, var), "");
-        						fc.setShortDescription(info.getDescr());
-        						fc.setRelevance(10000);
-        						fc.setIcon(IconLib.instance().getMemberFunctionIcon());
-        						completions.add(fc);
-                        	} 
-                        }
-					}
-				}
-			}
-			if (analyzer.hasClassContext())
-			{
-				Set<CompletionInfo> classMembers = analyzer.getClassMembers(analyzer.getClassContext());
-				if (!classMembers.isEmpty()) {
-                    for  (CompletionInfo info : classMembers)
-                    {
-                    	if (info.getType() == CompletionType.VARIABLE)
-                    	{
-                    		VariableCompletion vc = new VariableCompletion(this,
-    							 info.getText(), "");
-    						vc.setShortDescription(info.getDescr());
-    						vc.setRelevance(10000);
-    						vc.setIcon(IconLib.instance().getVariableIcon());
-    						completions.add(vc);
-                    	} 
-                    }
-				}
-			}
+		
 	}
 
 	protected void fillVisitors(List<LuaCompletionVisitor> visitors) {

@@ -25,12 +25,8 @@
  */
 package org.mism.forfife.visitors;
 
-import java.util.HashSet;
-
 import org.mism.forfife.Logging;
 import org.mism.forfife.LuaParseTreeUtil;
-import org.mism.forfife.lua.LuaParser;
-import org.mism.forfife.lua.LuaParser.FunctiondefContext;
 import org.mism.forfife.lua.LuaParser.StatContext;
 
 public class FunctionVisitor extends LuaCompletionVisitor {
@@ -52,11 +48,6 @@ public class FunctionVisitor extends LuaCompletionVisitor {
 
 		}
 		return super.visitStat(ctx);
-	}
-
-	private FunctiondefContext getParentFunctiondefContext(StatContext ctx) {
-		return LuaParseTreeUtil.getParentRuleContext(ctx,
-				LuaParser.RULE_functiondef, FunctiondefContext.class);
 	}
 
 	boolean isFunctionCtx(StatContext ctx) {

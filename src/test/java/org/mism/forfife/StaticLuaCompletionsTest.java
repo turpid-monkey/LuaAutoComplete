@@ -2,17 +2,12 @@ package org.mism.forfife;
 
 import static org.junit.Assert.assertEquals;
 
-import java.awt.Point;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.swing.text.JTextComponent;
-
-import org.fife.ui.autocomplete.AbstractCompletionProvider;
 import org.fife.ui.autocomplete.BasicCompletion;
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.FunctionCompletion;
-import org.fife.ui.autocomplete.ParameterizedCompletion;
 import org.junit.Test;
 
 public class StaticLuaCompletionsTest {
