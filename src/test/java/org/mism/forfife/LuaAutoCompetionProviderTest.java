@@ -12,7 +12,6 @@ import java.util.Set;
 
 import org.fife.ui.autocomplete.Completion;
 import org.fife.ui.autocomplete.FunctionCompletion;
-import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.junit.Test;
 
 public class LuaAutoCompetionProviderTest {
@@ -25,8 +24,8 @@ public class LuaAutoCompetionProviderTest {
 				"function", 1, 1, true));
 		infos.add(CompletionInfo.newVariableInstance(new LuaResource("test"),
 				"var", 2, 2, false));
-		Map<String, List<Parameter>> params = new HashMap<String, List<Parameter>>();
-		params.put("function", Arrays.asList(new Parameter("string", "param1")));
+		Map<String, List<FunctionParameter>> params = new HashMap<String, List<FunctionParameter>>();
+		params.put("function", Arrays.asList(new FunctionParameter("param1")));
 		Map<String, Set<String>> tables = new HashMap<String, Set<String>>();
 		Map<String, String> functionDescr = new HashMap<String, String>();
 		functionDescr.put("function", "<p>Some Info");
@@ -49,7 +48,7 @@ public class LuaAutoCompetionProviderTest {
 		List<CompletionInfo> infos = new ArrayList<CompletionInfo>();
 		infos.add(CompletionInfo.newVariableInstance(new LuaResource("test"),
 				"var", 2, 2, false));
-		Map<String, List<Parameter>> params = new HashMap<String, List<Parameter>>();
+		Map<String, List<FunctionParameter>> params = new HashMap<String, List<FunctionParameter>>();
 		Map<String, Set<String>> tables = new HashMap<String, Set<String>>();
 		tables.put("var", new HashSet<String>());
 		Map<String, String> functionDescr = new HashMap<String, String>();

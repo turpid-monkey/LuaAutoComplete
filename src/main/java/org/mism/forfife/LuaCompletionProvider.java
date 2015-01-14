@@ -77,13 +77,9 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 		JTextComponentResourceLoader.setTextAreaManager(textAreaManager);
 	}
 
-	protected String i18n(Object o) {
-		return o.toString();
-	}
-
 	protected List<Completion> initDynamicCompletions(
 			Collection<CompletionInfo> infos,
-			Map<String, List<Parameter>> functionParams,
+			Map<String, List<FunctionParameter>> functionParams,
 			Map<String, String> functionDescr, Map<String, Set<String>> tables) {
 		List<Completion> completions = new ArrayList<Completion>();
 		for (CompletionInfo comp : infos) {
@@ -92,7 +88,12 @@ public class LuaCompletionProvider extends DefaultCompletionProvider {
 				FunctionCompletion fc = new FunctionCompletion(this,
 						comp.getText(), "function");
 				fc.setRelevance(4000);
-				List<Parameter> params = functionParams.get(comp.getText());
+				List<FunctionParameter> fparams = functionParams.get(comp.getText());
+				List<Parameter> params = new ArrayList<Parameter>();
+				for (FunctionParameter parm : fparams)
+				{
+					params.add(new Parameter(null, parm.getParamName()));
+				}
 				fc.setParams(params);
 
 				StringBuffer shortDescr = new StringBuffer();

@@ -51,7 +51,6 @@ import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
-import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.mism.forfife.lua.LuaBaseListener;
 import org.mism.forfife.lua.LuaLexer;
 import org.mism.forfife.lua.LuaParser;
@@ -100,10 +99,10 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 	 */
 	public boolean initCompletions(CaretInfo info,
 			Map<LuaResource, LuaSyntaxInfo> includes) {
-		getClasses().clear();
 		try {
 			if (loader.hasModifications() || !ok
 					|| info.getPosition() != lastPosition) {
+				clear();
 				lastPosition = info.getPosition();
 				String luaScript = getLuaScript();
 				endIdx = luaScript.trim().length() - 1;
@@ -151,6 +150,12 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			}
 		}
 		return ok;
+	}
+
+	private void clear() {
+		getClasses().clear();
+		getFunctionParams().clear();
+		getTypeMap().clear();
 	}
 
 	private class LuaListener extends LuaBaseListener {
@@ -432,11 +437,11 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 							// we have a function parameter list!
 							ParseTree t = ctx.getChild(1).getChild(0);
 							int childCount = t.getChildCount();
-							List<Parameter> params = new ArrayList<Parameter>();
+							List<FunctionParameter> params = new ArrayList<FunctionParameter>();
 							functionParams.put(currentFunction, params);
 							for (int i = 0; i < childCount; i += 2) {
 								ParseTree nt = t.getChild(i);
-								params.add(new Parameter(null, nt.getText()));
+								params.add(new FunctionParameter(nt.getText()));
 								addVariable(nt.getText(), ctx, true);
 							}
 						}

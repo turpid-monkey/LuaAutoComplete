@@ -34,7 +34,6 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeMap;
 
-import org.fife.ui.autocomplete.ParameterizedCompletion.Parameter;
 import org.mism.forfife.lua.LuaParser;
 
 public class LuaSyntaxInfo {
@@ -49,7 +48,7 @@ public class LuaSyntaxInfo {
 
 	protected String classContext;
 	protected Stack<Map<String, CompletionInfo>> relevantStack = new Stack<Map<String, CompletionInfo>>();
-	protected Map<String, List<Parameter>> functionParams = new TreeMap<String, List<Parameter>>();
+	protected Map<String, List<FunctionParameter>> functionParams = new TreeMap<String, List<FunctionParameter>>();
 	protected Map<String, String> typeMap = new HashMap<String, String>();
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
@@ -123,15 +122,15 @@ public class LuaSyntaxInfo {
 		this.relevantStack = relevantStack;
 	}
 
-	public Map<String, List<Parameter>> getFunctionParams() {
+	public Map<String, List<FunctionParameter>> getFunctionParams() {
 		return functionParams;
 	}
 
-	public void setFunctionParams(Map<String, List<Parameter>> functionParams) {
+	public void setFunctionParams(Map<String, List<FunctionParameter>> functionParams) {
 		this.functionParams = functionParams;
 	}
 
-	public List<Parameter> getFunctionParams(String functionName) {
+	public List<FunctionParameter> getFunctionParams(String functionName) {
 		return functionParams.get(functionName);
 	}
 

@@ -113,7 +113,7 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals("FUNCTION:foo; FUNCTION:test;",
 				toString(an.getCompletions()));
 		assertEquals(1, an.getFunctionParams("foo").size());
-		assertEquals("n", an.getFunctionParams("foo").get(0).getName());
+		assertEquals("n", an.getFunctionParams("foo").get(0).getParamName());
 	}
 
 	@Test
