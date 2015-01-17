@@ -1,12 +1,13 @@
 apply plugin: 'java'
 apply plugin: 'me.champeau.gradle.antlr4'
-apply plugin: 'maven'
+apply plugin: 'maven-publish'
 apply plugin: 'jacoco'
 apply plugin: 'com.github.kt3k.coveralls'
 apply plugin: 'eclipse'
+apply plugin: 'com.jfrog.bintray'
 
 version = '0.1'
-group = 'org.mism.forfife'
+group = 'edu.gcsc.lua'
 
 jar.dependsOn compileJava
 compileJava.dependsOn antlr4 
@@ -23,16 +24,58 @@ compileJava {
    
 }
 
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 antlr4 {
     output=file('src/main/java/org/mism/forfife/lua')
     
     extraArgs =['-package','org.mism.forfife.lua']
 }
 
+artifacts {
+    archives sourcesJar
+}
+
 jacocoTestReport {
     reports {
         xml.enabled = true // coveralls plugin depends on xml format report
         html.enabled = true
+    }
+}
+
+bintray {
+    user = "turpid-monkey"
+    key = "3227f8100c9250a6b02a530b67486836d95cfa60"
+    publications = ['mavenJava'] 
+    publish = true
+    pkg {
+        repo = 'maven'
+        name = 'edu.gcsc.lua'
+        desc = 'A library to generate auto-completion proposals from LUA scripts.'
+        websiteUrl = 'https://github.com/turpid-monkey/LuaAutoComplete'
+        issueTrackerUrl = 'https://github.com/turpid-monkey/LuaAutoComplete/issues'
+        vcsUrl = 'https://github.com/turpid-monkey/LuaAutoComplete.git'
+        licenses = ['BSD 2-clause']
+        labels = ['lua', 'auto-completion']
+        attributes= ['plat': ['linux', 'osx', 'windows']]
+        publicDownloadNumbers = true
+        version {
+            name = '0.1' //Optional logical version name
+            desc = 'alpha-version'
+            vcsTag = 'master'
+        }
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            artifact sourcesJar
+        }
     }
 }
 
@@ -69,6 +112,7 @@ buildscript {
     dependencies {
         classpath 'me.champeau.gradle:antlr4-gradle-plugin:0.1'
         classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1'
+        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.0'
     }
 }
 
@@ -80,9 +124,4 @@ dependencies {
     compile (group: 'org.antlr', name: 'antlr4', version: '4.2')
     compile (group: 'org.antlr', name: 'antlr4', version: '4.2', classifier: 'sources')
 
-    compile (group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '2.5.4')
-    compile (group: 'com.fifesoft', name: 'rsyntaxtextarea', version: '2.5.4', classifier: 'sources')
-    
-    compile (group: 'com.fifesoft', name : 'autocomplete', version: '2.5.4')
-    compile (group: 'com.fifesoft', name : 'autocomplete', version: '2.5.4', classifier: 'sources')
 }

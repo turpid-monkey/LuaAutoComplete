@@ -2,7 +2,7 @@ LuaCompletionProvider
 =====================
 [![Build Status](https://travis-ci.org/turpid-monkey/LuaAutoComplete.svg?branch=master)](https://travis-ci.org/turpid-monkey/LuaAutoComplete/) [![Coverage Status](https://img.shields.io/coveralls/turpid-monkey/LuaAutoComplete.svg)](https://coveralls.io/r/turpid-monkey/LuaAutoComplete)
 =====================
-A LUA completion provider for RSyntaxTextArea (http://fifesoft.com/rsyntaxtextarea/)
+A library that generates auto-completion proposals for LUA scripts.
 
 The project source is available under the BSD 2-clause license printed below.
 
