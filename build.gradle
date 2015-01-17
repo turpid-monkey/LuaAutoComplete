@@ -48,7 +48,7 @@ jacocoTestReport {
 
 bintray {
     user = "turpid-monkey"
-    key = "3227f8100c9250a6b02a530b67486836d95cfa60"
+    key = ""
     publications = ['mavenJava'] 
     publish = true
     pkg {
