@@ -30,9 +30,9 @@ task sourcesJar(type: Jar, dependsOn: classes) {
 }
 
 antlr4 {
-    output=file('src/main/java/org/mism/forfife/lua')
+    output=file('src/main/java/edu/gcsc/lua/grammar')
     
-    extraArgs =['-package','org.mism.forfife.lua']
+    extraArgs =['-package','edu.gcsc.lua.grammar']
 }
 
 artifacts {
