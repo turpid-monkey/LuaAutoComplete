@@ -57,12 +57,15 @@ import edu.gcsc.lua.grammar.LuaBaseListener;
 import edu.gcsc.lua.grammar.LuaLexer;
 import edu.gcsc.lua.grammar.LuaParser;
 import edu.gcsc.lua.grammar.LuaParser.BlockContext;
+import edu.gcsc.lua.grammar.LuaParser.ExpContext;
 import edu.gcsc.lua.grammar.LuaParser.FieldContext;
 import edu.gcsc.lua.grammar.LuaParser.FieldlistContext;
 import edu.gcsc.lua.grammar.LuaParser.FuncbodyContext;
 import edu.gcsc.lua.grammar.LuaParser.NamelistContext;
+import edu.gcsc.lua.grammar.LuaParser.NumberContext;
 import edu.gcsc.lua.grammar.LuaParser.StatContext;
 import edu.gcsc.lua.grammar.LuaParser.TableconstructorContext;
+import edu.gcsc.lua.grammar.LuaParser.VarSuffixContext;
 import edu.gcsc.lua.visitors.LuaCompletionVisitor;
 
 /**
@@ -331,6 +334,22 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		@Override
 		public void exitVar(LuaParser.VarContext ctx) {
 			String varName = txt(ctx);
+
+			// if it has a VarSuffixContext, it looks like a[...]
+			VarSuffixContext vc = LuaParseTreeUtil.getChildRuleContext(ctx,
+					LuaParser.RULE_varSuffix, VarSuffixContext.class);
+			if (vc != null) {
+				ExpContext ec = LuaParseTreeUtil.getChildRuleContext(vc,
+						LuaParser.RULE_exp, ExpContext.class);
+				if (ec != null) {
+					NumberContext nc = LuaParseTreeUtil.getChildRuleContext(ec,
+							LuaParser.RULE_number, NumberContext.class);
+					if (nc == null) {
+						// this is like a[test]
+						return;
+					}
+				}
+			}
 
 			// if it is a subrule of prefixExp, it might as well be a function
 			// call

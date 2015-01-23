@@ -465,4 +465,13 @@ public class LuaSyntaxAnalyzerTest {
 				CaretInfo.HOME);
 		assertEquals("VARIABLE:a;", toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void tablesWithVariableIndex() throws Exception {
+		String script = "a = {}\ni=5\na[i]=10";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script,
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:a; VARIABLE:i;", toString(an.getCompletions()));
+		
+	}
 }
