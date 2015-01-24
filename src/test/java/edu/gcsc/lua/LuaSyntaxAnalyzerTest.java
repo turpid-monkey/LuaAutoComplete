@@ -474,4 +474,13 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals("VARIABLE:a; VARIABLE:i;", toString(an.getCompletions()));
 		
 	}
+	
+	@Test
+	public void nestedTables() throws Exception {
+		String script = "outer = { firstInner = { inner = {1}}}";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script,
+				CaretInfo.HOME);
+		assertEquals("VARIABLE:outer; VARIABLE:outer.firstInner; VARIABLE:outer.firstInner.inner;", toString(an.getCompletions()));
+		
+	}
 }

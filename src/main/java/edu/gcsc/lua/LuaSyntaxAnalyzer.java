@@ -172,6 +172,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		private static final String LOCAL = "local";
 		private static final String FOR = "for";
 		private static final String IF = "if";
+		private static final String DOT = ".";
 
 		CaretInfo info;
 		boolean frozen = false;
@@ -289,13 +290,27 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		public void exitTableconstructor(TableconstructorContext ctx) {
 			StatContext parent = LuaParseTreeUtil.getParentStatContext(ctx);
 			boolean local = false;
-			String tableName;
+
+			StringBuffer tableName = new StringBuffer();
+			int idx = 0;
 			if (LOCAL.equals(start(parent))) {
-				tableName = next(parent);
+				idx++;
 				local = true;
-			} else {
-				tableName = start(parent);
 			}
+			tableName.append(txt(parent, idx));
+			idx = tableName.length();
+			// is it a nested table? if so, let's build the proper nested table
+			// name
+			TableconstructorContext nestedCtx = ctx;
+			while ((nestedCtx = LuaParseTreeUtil.getParentRuleContext(
+					nestedCtx, LuaParser.RULE_tableconstructor,
+					TableconstructorContext.class)) != null) {
+
+				tableName.insert(idx, DOT + start(LuaParseTreeUtil.getChildRuleContext(nestedCtx,
+						LuaParser.RULE_fieldlist, FieldlistContext.class)));
+			}
+			
+
 			// inline declaration of a table in a for/if block, do nothing
 			if (FOR.equals(tableName) || IF.equals(tableName))
 				return;
@@ -317,17 +332,18 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			// Save info about tables
 			if (!local) {
 				Set<String> set;
-				if (!getTables().containsKey(tableName)) {
-					getTables().put(tableName, new HashSet<String>());
+				String key = tableName.toString();
+				if (!getTables().containsKey(key)) {
+					getTables().put(key, new HashSet<String>());
 				}
-				set = getTables().get(tableName);
+				set = getTables().get(key);
 
 				for (String entry : entries)
 					set.add(entry);
 			}
 			// Add variable completion
 			for (String entry : entries) {
-				addVariable(tableName + "." + entry, ctx, local);
+				addVariable(tableName + DOT + entry, ctx, local);
 			}
 		}
 

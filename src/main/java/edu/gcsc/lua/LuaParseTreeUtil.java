@@ -97,6 +97,15 @@ public class LuaParseTreeUtil {
 	public static String next(ParserRuleContext ctx) {
 		return ctx.getChild(1).getText();
 	}
+	
+	public static String txt(ParserRuleContext ctx, int sibling)
+	{
+		if (ctx.children!=null && ctx.children.size()>sibling)
+		{
+			return ctx.getChild(sibling).getText();
+		}
+		return null;
+	}
 
 	public static int line(ParserRuleContext ctx) {
 		return ctx.getStart().getLine();
