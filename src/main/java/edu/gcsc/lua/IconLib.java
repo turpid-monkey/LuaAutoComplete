@@ -36,13 +36,13 @@ public class IconLib {
 	private IconLib() {
 		try {
 			memberFunctionIcon = new ImageIcon(IconLib.class.getClassLoader()
-					.getResource("org/mism/forfife/icons/memberFunction.gif"));
+					.getResource("edu/gcsc/lua/icons/memberFunction.gif"));
 			functionIcon = new ImageIcon(IconLib.class.getClassLoader()
-					.getResource("org/mism/forfife/icons/function.gif"));
+					.getResource("edu/gcsc/lua/icons/function.gif"));
 			variableIcon = new ImageIcon(IconLib.class.getClassLoader()
-					.getResource("org/mism/forfife/icons/variable.gif"));
+					.getResource("edu/gcsc/lua/icons/variable.gif"));
 			libraryIcon = new ImageIcon(IconLib.class.getClassLoader()
-					.getResource("org/mism/forfife/icons/library.gif"));
+					.getResource("edu/gcsc/lua/icons/library.gif"));
 		} catch (Exception e) {
             Logging.error("Could not load icons.", e);
 		}
