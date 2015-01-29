@@ -195,6 +195,10 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			if (name.contains(".")) {
 				name = name.substring(0, name.indexOf("."));
 			}
+			if (name.contains("["))
+			{
+				name = name.substring(0, name.indexOf("["));
+			}
 			if (global.containsKey(name))
 				return false;
 			for (int i = 0; i < scopes.size(); i++) {
@@ -223,6 +227,10 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		Map<String, CompletionInfo> findScope(String name) {
 			if (name.contains(".")) {
 				name = name.substring(0, name.indexOf("."));
+			}
+			if (name.contains("["))
+			{
+				name = name.substring(0, name.indexOf("["));
 			}
 			if (global.containsKey(name))
 				return global;

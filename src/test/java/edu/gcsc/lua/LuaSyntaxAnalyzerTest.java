@@ -483,4 +483,14 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals("VARIABLE:outer; VARIABLE:outer.firstInner; VARIABLE:outer.firstInner.inner;", toString(an.getCompletions()));
 		
 	}
+	
+	@Test
+	public void localIndexedTablesGoGlobal() throws Exception
+	{
+		String script = "function foo()\n  local tbl = {}\n  tbl[1]=0\n  return tbl[1]\nend\n";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script,
+				CaretInfo.HOME);
+		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
+		
+	}
 }
