@@ -1,4 +1,5 @@
 language: java
+
 env:
   bintrayKey:
     secure: "WDFqZzHdGP6ROriHhHklI8OPuFKQfrtsyzmVzex2A0FoF81td20JoUpElnK8JyVLzIrI8/VronoUZB8gEHEmaNJbsO1pNqcndem4tMwJssCL+BjE7zKKKJScfdvK9KWCAfzYqsJIjilfIAAwr8GqjxT4hljpKTJLxoqRl0CeUCc="
