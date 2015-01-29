@@ -116,12 +116,12 @@ dependencies {
 }
 
 artifactory {
-    contextUrl = "http://oss.jfrog.org/artifactory"   //The base Artifactory URL if not overridden by the publisher/resolver
+    contextUrl = "http://oss.jfrog.org/artifactory" 
     publish {
         repository {
             repoKey = 'oss-snapshot-local'
             username = "turpid-monkey"
-            password = System.properties['bintrayKey']
+            password = System.getenv()['bintrayKey']
             maven = true
         }
         defaults {
