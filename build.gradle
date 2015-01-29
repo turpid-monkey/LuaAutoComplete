@@ -11,7 +11,7 @@ group = 'edu.gcsc.lua'
 
 if (System.env['TRAVIS'] != null) {
     project.ext.set ("buildInfo.build.number", System.env.TRAVIS_BUILD_NUMBER)
-    project.ext.set ("buildInfo.build.name", System.env.TRAVIS_BUILD_ID)
+    project.ext.set ("buildInfo.build.name", rootProject.name)
 } else {
     project.ext.set ("buildInfo.build.number", '0' )
     project.ext.set ("buildInfo.build.name", rootProject.name+"-local")
@@ -66,16 +66,10 @@ publishing {
 repositories {
     mavenCentral()
     
-    mavenLocal()
-    
     maven {
         name 'jcenter'
         url  'http://jcenter.bintray.com'
     }
-
-    // You may define additional repositories, or even remove "mavenCentral()".
-    // Read more about repositories here:
-    //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:repositories
 }
 
 buildscript {
@@ -131,8 +125,7 @@ artifactory {
     resolve {
         repository {
             repoKey = 'libs-release'
-            maven = true
-             
+            maven = true           
         }
     }
 }
