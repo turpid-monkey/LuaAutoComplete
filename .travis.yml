@@ -1,20 +1,14 @@
 language: java
-
 env:
-  bintrayKey:
-    secure: "WDFqZzHdGP6ROriHhHklI8OPuFKQfrtsyzmVzex2A0FoF81td20JoUpElnK8JyVLzIrI8/VronoUZB8gEHEmaNJbsO1pNqcndem4tMwJssCL+BjE7zKKKJScfdvK9KWCAfzYqsJIjilfIAAwr8GqjxT4hljpKTJLxoqRl0CeUCc="
-
+  global:
+    secure: go0uDddwW/NIRZ0UuToaSLAv/w1Nmg+lFJh0hhiKFxAIsukFsPSc74us0gwErvg+kngyXDxmB7N7W2ndA54toZUjNbpIogla+Gw7W08QxiaSsTqVqQ9OYSHj+EabO5trFZ863F5dEWmGRod99tbqrp20R5DPPrrV1rDkhkClVVk=
 jdk:
-  - oraclejdk8
-
+- oraclejdk8
 install:
-  - ./gradlew --refresh-dependencies --stacktrace
-
+- ./gradlew --refresh-dependencies --stacktrace
 script:
-  - ./gradlew build artifactoryPublish
-
+- ./gradlew build artifactoryPublish
 after_success:
-  - ./gradlew jacocoTestReport coveralls
-
+- ./gradlew jacocoTestReport coveralls
 after_failure:
-  - "cat ./build/test-results/*.xml"
+- cat ./build/test-results/*.xml
