@@ -25,7 +25,7 @@
  */
 package edu.gcsc.lua;
 
-class CompletionInfo {
+public class CompletionInfo {
 	LuaResource resource;
 	CompletionType type;
 	String text;
@@ -62,17 +62,17 @@ class CompletionInfo {
 		return descr;
 	}
 
-	static CompletionInfo newInstance(LuaResource resource,
+	public static CompletionInfo newInstance(LuaResource resource,
 			CompletionType type, String text, int line, int pos) {
 		return newInstance(resource, type, text, line, pos, false);
 	}
 
-	static CompletionInfo newInstance(LuaResource resource,
+	public static CompletionInfo newInstance(LuaResource resource,
 			CompletionType type, String text, int line, int pos, boolean local) {
 		return newInstance(resource, type, text, null, line, pos, local);
 	}
 
-	static CompletionInfo newInstance(LuaResource resource,
+	public static CompletionInfo newInstance(LuaResource resource,
 			CompletionType type, String text, String descr, int line, int pos,
 			boolean local) {
 		CompletionInfo c = new CompletionInfo();
@@ -86,23 +86,23 @@ class CompletionInfo {
 		return c;
 	}
 
-	static CompletionInfo newVariableInstance(LuaResource resource,
+	public static CompletionInfo newVariableInstance(LuaResource resource,
 			String text, int line, int pos, boolean local) {
 		return newInstance(resource, CompletionType.VARIABLE, text, line, pos,
 				local);
 	}
 
-	static CompletionInfo newFunctionInstance(LuaResource resource, String txt,
+	public static CompletionInfo newFunctionInstance(LuaResource resource, String txt,
 			int line, int pos, boolean local) {
 		return newInstance(resource, CompletionType.FUNCTION, txt, line, pos,
 				local);
 	}
 
-	static CompletionInfo newKeyWordInstance(String txt, String descr) {
+	public static CompletionInfo newKeyWordInstance(String txt, String descr) {
 		return newInstance(null, CompletionType.LANGUAGE, txt, 0, 0, false);
 	}
 
-	static CompletionInfo newTableInstance(LuaResource res, String txt, int line, int pos, boolean local) {
+	public static CompletionInfo newTableInstance(LuaResource res, String txt, int line, int pos, boolean local) {
 		return newInstance(res, CompletionType.TABLE, txt, line, pos, local);
 	}
 
