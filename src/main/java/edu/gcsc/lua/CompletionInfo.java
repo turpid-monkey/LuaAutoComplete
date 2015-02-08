@@ -33,6 +33,7 @@ public class CompletionInfo {
 	int line;
 	int pos;
 	boolean local;
+	int relevance;
 
 	public LuaResource getResource() {
 		return resource;
@@ -40,6 +41,16 @@ public class CompletionInfo {
 
 	public boolean isLocal() {
 		return local;
+	}
+	
+	public int getRelevance()
+	{
+		return relevance;
+	}
+	
+	public void setRelevance(int relevance)
+	{
+		this.relevance = relevance;
 	}
 
 	public int getLine() {
