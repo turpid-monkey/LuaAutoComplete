@@ -15,6 +15,7 @@ public class FileResourceLoader implements LuaResourceLoader {
 
 	@Override
 	public void setResource(LuaResource resource) {
+		this.resource = resource;
 		String fileName = resource.getResourceLink().substring(5);
 		file = new File(fileName);
 		lastModified = file.lastModified();
