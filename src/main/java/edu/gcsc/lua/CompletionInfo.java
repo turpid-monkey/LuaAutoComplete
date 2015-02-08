@@ -92,24 +92,31 @@ public class CompletionInfo {
 				local);
 	}
 
-	public static CompletionInfo newFunctionInstance(LuaResource resource, String txt,
-			int line, int pos, boolean local) {
+	public static CompletionInfo newFunctionInstance(LuaResource resource,
+			String txt, int line, int pos, boolean local) {
 		return newInstance(resource, CompletionType.FUNCTION, txt, line, pos,
 				local);
+	}
+
+	public static CompletionInfo newFunctionInstance(LuaResource resource,
+			String txt, String descr, int line, int pos, boolean local) {
+		return newInstance(resource, CompletionType.FUNCTION, txt, descr, line,
+				pos, local);
 	}
 
 	public static CompletionInfo newKeyWordInstance(String txt, String descr) {
 		return newInstance(null, CompletionType.LANGUAGE, txt, 0, 0, false);
 	}
 
-	public static CompletionInfo newTableInstance(LuaResource res, String txt, int line, int pos, boolean local) {
+	public static CompletionInfo newTableInstance(LuaResource res, String txt,
+			int line, int pos, boolean local) {
 		return newInstance(res, CompletionType.TABLE, txt, line, pos, local);
 	}
 
 	public String toString() {
 		return getType().name() + ":" + getText();
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return toString().hashCode();
