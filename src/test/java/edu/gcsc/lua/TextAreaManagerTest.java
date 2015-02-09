@@ -42,5 +42,16 @@ public class TextAreaManagerTest {
 		mgr.getAnalyzerCache(dummy);
 		assertEquals(dummy, mgr.getTextArea(new LuaResource("textArea:" + dummy.hashCode())));
 	}
+	
+	@Test public void free() throws Exception {
+		TextAreaManager mgr = new TextAreaManager();
+		JTextComponentResourceLoader.setTextAreaManager(mgr);
+		mgr.getFactory().getLoaders().add(JTextComponentResourceLoader.class);
+		JTextComponent dummy = EasyMock.createNiceMock(JTextComponent.class);
+		mgr.getAnalyzerCache(dummy);
+		assertEquals(dummy, mgr.getTextArea(new LuaResource("textArea:" + dummy.hashCode())));
+		mgr.free(dummy);
+		assertNull(mgr.getTextArea(new LuaResource("textArea:" + dummy.hashCode())));
+	}
 
 }
