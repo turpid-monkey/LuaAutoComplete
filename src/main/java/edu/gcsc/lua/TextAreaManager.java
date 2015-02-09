@@ -25,6 +25,10 @@
  */
 package edu.gcsc.lua;
 
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.ComponentListener;
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,21 +39,23 @@ import javax.swing.text.JTextComponent;
 import edu.gcsc.lua.visitors.LuaCompletionVisitor;
 
 public class TextAreaManager {
+	private static final String TEXT_AREA_PREFIX = "textArea:";
 	private Map<LuaResource, JTextComponent> resourceMap = new HashMap<LuaResource, JTextComponent>();
 	private Map<JTextComponent, Map<LuaResource, LuaSyntaxInfo>> analyzerCache = new HashMap<JTextComponent, Map<LuaResource, LuaSyntaxInfo>>();
 
-	public Map<LuaResource, LuaSyntaxInfo> getAnalyzerCache(JTextComponent c) {
+	public Map<LuaResource, LuaSyntaxInfo> getAnalyzerCache(
+			final JTextComponent c) {
 		if (analyzerCache.containsKey(c)) {
 			return analyzerCache.get(c);
 		}
-		Map<LuaResource, LuaSyntaxInfo> includes = new HashMap<LuaResource, LuaSyntaxInfo>();
+		final Map<LuaResource, LuaSyntaxInfo> includes = new HashMap<LuaResource, LuaSyntaxInfo>();
 		analyzerCache.put(c, includes);
 
 		LuaSyntaxAnalyzer analyzer = new LuaSyntaxAnalyzer();
-		
+
 		analyzer.setVisitors(getVisitors());
 		analyzer.setResourceLoaderFactory(getFactory());
-		LuaResource res = new LuaResource("textArea:" + c.hashCode());
+		final LuaResource res = new LuaResource(TEXT_AREA_PREFIX + c.hashCode());
 		includes.put(res, analyzer);
 		resourceMap.put(res, c);
 		try {
@@ -59,6 +65,17 @@ public class TextAreaManager {
 			Logging.error("Could not instantiate root syntax analyzer", e);
 		}
 		return includes;
+	}
+
+	public void free(JTextComponent disposed) {
+		LuaResource res = new LuaResource(TEXT_AREA_PREFIX + disposed.hashCode());
+		if (!resourceMap.containsKey(res)) {
+			Logging.debug("Trying to clear cache for " + res
+					+ ", but resource does not exist.");
+		} else {
+			resourceMap.remove(res);
+			analyzerCache.remove(disposed);
+		}
 	}
 
 	public JTextComponent getTextArea(LuaResource res) {
