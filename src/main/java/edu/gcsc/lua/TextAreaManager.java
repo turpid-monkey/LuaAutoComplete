@@ -81,6 +81,12 @@ public class TextAreaManager {
 	public JTextComponent getTextArea(LuaResource res) {
 		return resourceMap.get(res);
 	}
+	
+	public void free()
+	{
+		resourceMap.clear();
+		analyzerCache.clear();
+	}
 
 	public List<LuaCompletionVisitor> getVisitors() {
 		return visitors;
