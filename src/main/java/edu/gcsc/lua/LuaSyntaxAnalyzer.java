@@ -195,8 +195,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			if (name.contains(".")) {
 				name = name.substring(0, name.indexOf("."));
 			}
-			if (name.contains("["))
-			{
+			if (name.contains("[")) {
 				name = name.substring(0, name.indexOf("["));
 			}
 			if (global.containsKey(name))
@@ -228,8 +227,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			if (name.contains(".")) {
 				name = name.substring(0, name.indexOf("."));
 			}
-			if (name.contains("["))
-			{
+			if (name.contains("[")) {
 				name = name.substring(0, name.indexOf("["));
 			}
 			if (global.containsKey(name))
@@ -314,10 +312,13 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 					nestedCtx, LuaParser.RULE_tableconstructor,
 					TableconstructorContext.class)) != null) {
 
-				tableName.insert(idx, DOT + start(LuaParseTreeUtil.getChildRuleContext(nestedCtx,
-						LuaParser.RULE_fieldlist, FieldlistContext.class)));
+				tableName.insert(
+						idx,
+						DOT
+								+ start(LuaParseTreeUtil.getChildRuleContext(
+										nestedCtx, LuaParser.RULE_fieldlist,
+										FieldlistContext.class)));
 			}
-			
 
 			// inline declaration of a table in a for/if block, do nothing
 			if (FOR.equals(tableName) || IF.equals(tableName))
@@ -360,18 +361,24 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			String varName = txt(ctx);
 
 			// if it has a VarSuffixContext, it might look like a[...]
-			VarSuffixContext vc = LuaParseTreeUtil.getLastChildRuleContext(ctx,
-					LuaParser.RULE_varSuffix, VarSuffixContext.class);
-			if (vc != null) {
+			int vscount = LuaParseTreeUtil.countChildRuleContextInstances(ctx,
+					LuaParser.RULE_varSuffix);
+			for (int i = 0; i < vscount; i++) {
+				VarSuffixContext vc = LuaParseTreeUtil
+						.getChildRuleContextByIdx(ctx, i,
+								LuaParser.RULE_varSuffix,
+								VarSuffixContext.class);
 				ExpContext ec = LuaParseTreeUtil.getChildRuleContext(vc,
 						LuaParser.RULE_exp, ExpContext.class);
 				if (ec != null) {
 					// a[1] is ok, might add support for a['x']?
 					NumberContext nc = LuaParseTreeUtil.getChildRuleContext(ec,
 							LuaParser.RULE_number, NumberContext.class);
-					if (nc == null) {
+					if (nc == null && (i == 0 || (i - 1) == vscount)) {
 						// this is like a[test]
 						return;
+					} else {
+						varName = varName.replaceAll("\\[.*\\]", "\\[\\]");
 					}
 				}
 			}

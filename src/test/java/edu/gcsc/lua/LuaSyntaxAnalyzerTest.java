@@ -456,7 +456,7 @@ public class LuaSyntaxAnalyzerTest {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("A = {}\n"
 				+ "A[1] = {-1, 1}\n" + "A[2] = {-1, 1}\n" + "A[3] = {-1, 1}\n",
 				CaretInfo.HOME);
-		assertEquals("VARIABLE:A; VARIABLE:A[1]; VARIABLE:A[2]; VARIABLE:A[3];", toString(an.getCompletions()));
+		assertEquals("VARIABLE:A; VARIABLE:A[];", toString(an.getCompletions()));
 	}
 	
 	@Test
@@ -499,6 +499,14 @@ public class LuaSyntaxAnalyzerTest {
 	{
 		String script = "util = {}\nutil.args = {}\nname=1\nutil.args[name] = 4";
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
-		assertEquals("VARIABLE:name; VARIABLE:util; VARIABLE:util.args;", toString(an.getCompletions()));
+		assertEquals("VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[];", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void nestedTablesWithVariableIdx2() throws Exception
+	{
+		String script = "util = {}\nutil.args = {}\nname=1\nutil.args[name] = {}\nutil.args[name].default = 5";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[]; VARIABLE:util.args[].default;", toString(an.getCompletions()));
 	}
 }
