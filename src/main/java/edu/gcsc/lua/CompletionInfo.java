@@ -116,7 +116,7 @@ public class CompletionInfo {
 	}
 
 	public static CompletionInfo newKeyWordInstance(String txt, String descr) {
-		return newInstance(null, CompletionType.LANGUAGE, txt, 0, 0, false);
+		return newInstance(null, CompletionType.LANGUAGE, txt, descr, 0, 0, false);
 	}
 
 	public static CompletionInfo newTableInstance(LuaResource res, String txt,
