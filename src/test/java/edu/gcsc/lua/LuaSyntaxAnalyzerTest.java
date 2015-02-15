@@ -493,4 +493,12 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
 		
 	}
+	
+	@Test
+	public void nestedTablesWithVariableIdx() throws Exception
+	{
+		String script = "util = {}\nutil.args = {}\nname=1\nutil.args[name] = 4";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("VARIABLE:name; VARIABLE:util; VARIABLE:util.args;", toString(an.getCompletions()));
+	}
 }

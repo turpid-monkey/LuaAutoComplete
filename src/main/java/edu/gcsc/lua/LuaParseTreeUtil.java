@@ -76,6 +76,33 @@ public class LuaParseTreeUtil {
 		return null;
 	}
 
+	public static <T extends ParserRuleContext> T getLastChildRuleContext(
+			final ParserRuleContext parent, final int ruleIdx,
+			final Class<? extends T> t) {
+		if (parent.children == null)
+			return null;
+		T r = null;
+		for (ParseTree child : parent.children) {
+			if (child instanceof ParserRuleContext
+					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
+				r = t.cast(child);
+		}
+		return r;
+	}
+
+	public static int countChildRuleContextInstances(
+			final ParserRuleContext parent, final int ruleIdx) {
+		if (parent.children == null)
+			return 0;
+		int count = 0;
+		for (ParseTree child : parent.children) {
+			if (child instanceof ParserRuleContext
+					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
+				count++;
+		}
+		return count;
+	}
+
 	public static <T extends ParserRuleContext> T getChildRuleContextRecursive(
 			final ParserRuleContext parent, final Class<? extends T> t,
 			final int... path) {
@@ -97,11 +124,9 @@ public class LuaParseTreeUtil {
 	public static String next(ParserRuleContext ctx) {
 		return ctx.getChild(1).getText();
 	}
-	
-	public static String txt(ParserRuleContext ctx, int sibling)
-	{
-		if (ctx.children!=null && ctx.children.size()>sibling)
-		{
+
+	public static String txt(ParserRuleContext ctx, int sibling) {
+		if (ctx.children != null && ctx.children.size() > sibling) {
 			return ctx.getChild(sibling).getText();
 		}
 		return null;

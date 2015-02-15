@@ -359,13 +359,14 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		public void exitVar(LuaParser.VarContext ctx) {
 			String varName = txt(ctx);
 
-			// if it has a VarSuffixContext, it looks like a[...]
-			VarSuffixContext vc = LuaParseTreeUtil.getChildRuleContext(ctx,
+			// if it has a VarSuffixContext, it might look like a[...]
+			VarSuffixContext vc = LuaParseTreeUtil.getLastChildRuleContext(ctx,
 					LuaParser.RULE_varSuffix, VarSuffixContext.class);
 			if (vc != null) {
 				ExpContext ec = LuaParseTreeUtil.getChildRuleContext(vc,
 						LuaParser.RULE_exp, ExpContext.class);
 				if (ec != null) {
+					// a[1] is ok, might add support for a['x']?
 					NumberContext nc = LuaParseTreeUtil.getChildRuleContext(ec,
 							LuaParser.RULE_number, NumberContext.class);
 					if (nc == null) {
