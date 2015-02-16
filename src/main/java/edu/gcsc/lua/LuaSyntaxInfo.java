@@ -153,8 +153,8 @@ public class LuaSyntaxInfo {
 		Map<String, CompletionInfo> map = new HashMap<String, CompletionInfo>();
 		for (Map<String, CompletionInfo> scope : relevantStack) {
 			for (CompletionInfo c : scope.values()) {
-				if (!map.containsKey((c.getText())))
-					map.put(c.getText(), c);
+				if (!map.containsKey((c.toString())))
+					map.put(c.toString(), c);
 			}
 		}
 		return map.values();

@@ -512,11 +512,20 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 										+ currentFunction
 										+ ", but it doesn't exist, skipping parameters.");
 							} else {
+								// Adding parameter suffix to all maps
 								CompletionInfo ci = functions
 										.remove(currentFunction);
+								String key = currentFunction + params.size();
 								ci.setParameter(params);
-								functions.put(currentFunction + params.size(),
-										ci);
+								functions.put(key, ci);
+								if (global.containsKey(currentFunction)) {
+									global.remove(currentFunction);
+									global.put(key, ci);
+								} else {
+									Map<String, CompletionInfo> scope = findScope(currentFunction);
+									scope.remove(currentFunction);
+									scope.put(key, ci);
+								}
 							}
 						}
 					}

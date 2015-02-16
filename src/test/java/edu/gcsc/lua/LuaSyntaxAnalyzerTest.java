@@ -103,7 +103,9 @@ public class LuaSyntaxAnalyzerTest {
 				});
 		for (CompletionInfo c : cl) {
 			buf.append((c.isLocal() ? "local " : "") + c.getType().name() + ":"
-					+ c.getText() + "; ");
+					+ c.getText()
+					+ (c.getParameter() != null ? c.getParameter().size() : "")
+					+ "; ");
 		}
 		return buf.toString().trim();
 	}
@@ -117,7 +119,7 @@ public class LuaSyntaxAnalyzerTest {
 		// var declaration
 		// within the function declaration. But in the final completion list,
 		// only n shows.
-		assertEquals("FUNCTION:foo; FUNCTION:test;",
+		assertEquals("FUNCTION:foo1; FUNCTION:test1;",
 				toString(an.getCompletions()));
 		assertEquals(1, an.getFunctions().get("foo1").getParameter().size());
 		assertEquals("n", an.getFunctions().get("foo1").getParameter().get(0)
@@ -168,7 +170,7 @@ public class LuaSyntaxAnalyzerTest {
 		an = createAndRunTestAnalyzer(
 				"function paramsTest(a,b,c) return 5 end", c);
 		assertEquals(
-				"FUNCTION:paramsTest; local VARIABLE:a; local VARIABLE:b; local VARIABLE:c;",
+				"FUNCTION:paramsTest3; local VARIABLE:a; local VARIABLE:b; local VARIABLE:c;",
 				toString(an.getCompletions()));
 		assertEquals(3, an.getFunctions().get("paramsTest3").getParameter()
 				.size());
@@ -180,7 +182,7 @@ public class LuaSyntaxAnalyzerTest {
 		CaretInfo c = CaretInfo.newInstance(40);
 		an = createAndRunTestAnalyzer(
 				"function paramsTest(a,b,c) return 5 end", c);
-		assertEquals("FUNCTION:paramsTest;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:paramsTest3;", toString(an.getCompletions()));
 		assertEquals(3, an.getFunctions().get("paramsTest3").getParameter()
 				.size());
 	}
@@ -190,8 +192,18 @@ public class LuaSyntaxAnalyzerTest {
 		LuaSyntaxAnalyzer an;
 		CaretInfo c = CaretInfo.newInstance(40);
 		an = createAndRunTestAnalyzer("foo = function (n)\nreturn n*2\nend", c);
-		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
+		assertEquals("FUNCTION:foo1;", toString(an.getCompletions()));
 		assertEquals(1, an.getFunctions().get("foo1").getParameter().size());
+	}
+
+	@Test
+	public void functionOverload() throws Exception {
+		LuaSyntaxAnalyzer an;
+		CaretInfo c = CaretInfo.newInstance(0);
+		an = createAndRunTestAnalyzer("function test(arm, be, crushed)\n"
+				+ " return 0\n"
+				+ "end\nfunction test(arm, be)\n  return 1\nend\n", c);
+		assertEquals("FUNCTION:test2; FUNCTION:test3;", toString(an.getCompletions()));
 	}
 
 	@Test
@@ -201,7 +213,7 @@ public class LuaSyntaxAnalyzerTest {
 		an = createAndRunTestAnalyzer("function test(arm, be, crushed)\n"
 				+ "fun = 5\n" + "return arm * arm + crushed\n" + "end", c);
 		assertEquals(
-				"FUNCTION:test; local VARIABLE:arm; local VARIABLE:be; local VARIABLE:crushed; VARIABLE:fun;",
+				"FUNCTION:test3; local VARIABLE:arm; local VARIABLE:be; local VARIABLE:crushed; VARIABLE:fun;",
 				toString(an.getCompletions()));
 		assertEquals(3, an.getFunctions().get("test3").getParameter().size());
 	}
@@ -369,7 +381,7 @@ public class LuaSyntaxAnalyzerTest {
 				+ "   self.balance = self.balance - amount\n" + "end\n",
 				CaretInfo.HOME);
 		assertEquals(
-				"FUNCTION:Account.create; FUNCTION:Account:withdraw; VARIABLE:Account; VARIABLE:Account.__index;",
+				"FUNCTION:Account.create1; FUNCTION:Account:withdraw1; VARIABLE:Account; VARIABLE:Account.__index;",
 				toString(an.getCompletions()));
 
 	}
@@ -422,7 +434,7 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals(true, replTxt.contains("Account:withdraw"));
 		assertEquals(true, replTxt.contains("self.balance"));
 		assertEquals(
-				"FUNCTION:Account:withdraw; local VARIABLE:amount; local VARIABLE:self.balance;",
+				"FUNCTION:Account:withdraw1; local VARIABLE:amount; local VARIABLE:self.balance;",
 				toString(an.getCompletions()));
 		assertEquals(true, an.hasClassContext());
 		assertEquals("Account", an.getClassContext());

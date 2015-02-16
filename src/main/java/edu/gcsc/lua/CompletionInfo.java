@@ -36,13 +36,13 @@ public class CompletionInfo {
 	int pos;
 	boolean local;
 	int relevance;
-	
+
 	List<FunctionParameter> parameter;
-	
+
 	public List<FunctionParameter> getParameter() {
 		return parameter;
 	}
-	
+
 	public void setParameter(List<FunctionParameter> parameter) {
 		this.parameter = parameter;
 	}
@@ -54,14 +54,12 @@ public class CompletionInfo {
 	public boolean isLocal() {
 		return local;
 	}
-	
-	public int getRelevance()
-	{
+
+	public int getRelevance() {
 		return relevance;
 	}
-	
-	public void setRelevance(int relevance)
-	{
+
+	public void setRelevance(int relevance) {
 		this.relevance = relevance;
 	}
 
@@ -128,7 +126,8 @@ public class CompletionInfo {
 	}
 
 	public static CompletionInfo newKeyWordInstance(String txt, String descr) {
-		return newInstance(null, CompletionType.LANGUAGE, txt, descr, 0, 0, false);
+		return newInstance(null, CompletionType.LANGUAGE, txt, descr, 0, 0,
+				false);
 	}
 
 	public static CompletionInfo newTableInstance(LuaResource res, String txt,
@@ -137,7 +136,8 @@ public class CompletionInfo {
 	}
 
 	public String toString() {
-		return getType().name() + ":" + getText();
+		return getType().name() + ":" + getText()
+				+ (parameter != null ? parameter.size() : "");
 	}
 
 	@Override
