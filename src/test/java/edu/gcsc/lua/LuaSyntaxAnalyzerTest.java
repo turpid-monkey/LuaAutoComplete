@@ -524,4 +524,16 @@ public class LuaSyntaxAnalyzerTest {
 				"VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[]; VARIABLE:util.args[].default;",
 				toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void inlineDeclaredTableParameter() throws Exception {
+		String script = "function util.foo(param)\n return 0\nend\n"
+				+ "function test()\n"
+				+ "util.foo({crash=1})\n"
+				+ "end\n";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals(
+				"FUNCTION:test; FUNCTION:util.foo1;",
+				toString(an.getCompletions()));
+	}
 }

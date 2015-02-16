@@ -303,6 +303,11 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				idx++;
 				local = true;
 			}
+			if (LuaParseTreeUtil.countChildRuleContextInstances(parent, LuaParser.RULE_functioncall)!=0)
+			{
+				// this is an anonymous table passed as function parameter
+				return;
+			}
 			tableName.append(txt(parent, idx));
 			idx = tableName.length();
 			// is it a nested table? if so, let's build the proper nested table
