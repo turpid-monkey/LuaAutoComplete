@@ -48,7 +48,7 @@ public class LuaSyntaxInfo {
 
 	protected String classContext;
 	protected Stack<Map<String, CompletionInfo>> relevantStack = new Stack<Map<String, CompletionInfo>>();
-	protected Map<String, List<FunctionParameter>> functionParams = new TreeMap<String, List<FunctionParameter>>();
+	protected Map<String, CompletionInfo> functions = new TreeMap<String, CompletionInfo>();
 	protected Map<String, String> typeMap = new HashMap<String, String>();
 	protected Map<String, String> doxyGenMap = new HashMap<String, String>();
 
@@ -122,16 +122,8 @@ public class LuaSyntaxInfo {
 		this.relevantStack = relevantStack;
 	}
 
-	public Map<String, List<FunctionParameter>> getFunctionParams() {
-		return functionParams;
-	}
-
-	public void setFunctionParams(Map<String, List<FunctionParameter>> functionParams) {
-		this.functionParams = functionParams;
-	}
-
-	public List<FunctionParameter> getFunctionParams(String functionName) {
-		return functionParams.get(functionName);
+	public Map<String, CompletionInfo> getFunctions() {
+		return functions;
 	}
 
 	public Map<String, String> getTypeMap() {

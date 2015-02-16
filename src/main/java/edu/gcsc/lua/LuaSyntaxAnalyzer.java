@@ -159,7 +159,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 
 	private void clear() {
 		getClasses().clear();
-		getFunctionParams().clear();
+		getFunctions().clear();
 		getTypeMap().clear();
 	}
 
@@ -271,6 +271,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			CompletionInfo funcInfo = CompletionInfo.newFunctionInstance(
 					LuaSyntaxAnalyzer.this.getResource(), name, line(ctx),
 					col(ctx), local);
+			functions.put(name, funcInfo);
 			if (local) {
 				scopes.peek().put(name, funcInfo);
 			} else {
@@ -280,7 +281,6 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				}
 				global.put(name, funcInfo);
 			}
-
 		}
 
 		@Override
@@ -481,10 +481,12 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 					Logging.info("Anonymous function hit. Redefining var '"
 							+ currentFunction + "' to a function.");
 					// var declaration in parent scope needs to be replaced.
-					replaceCompletionInfoRecursive(CompletionInfo
+					CompletionInfo funcInfo = CompletionInfo
 							.newFunctionInstance(
 									LuaSyntaxAnalyzer.this.getResource(),
-									currentFunction, line(ctx), col(ctx), false));
+									currentFunction, line(ctx), col(ctx), false);
+					functions.put(currentFunction, funcInfo);
+					replaceCompletionInfoRecursive(funcInfo);
 				} catch (NullPointerException e) {
 					Logging.error("Unknown type of anonymous function def, or some completely different construct.");
 				}
@@ -499,11 +501,22 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 							ParseTree t = ctx.getChild(1).getChild(0);
 							int childCount = t.getChildCount();
 							List<FunctionParameter> params = new ArrayList<FunctionParameter>();
-							functionParams.put(currentFunction, params);
+
 							for (int i = 0; i < childCount; i += 2) {
 								ParseTree nt = t.getChild(i);
 								params.add(new FunctionParameter(nt.getText()));
 								addVariable(nt.getText(), ctx, true);
+							}
+							if (!functions.containsKey(currentFunction)) {
+								Logging.error("Trying to add parameters to function "
+										+ currentFunction
+										+ ", but it doesn't exist, skipping parameters.");
+							} else {
+								CompletionInfo ci = functions
+										.remove(currentFunction);
+								ci.setParameter(params);
+								functions.put(currentFunction + params.size(),
+										ci);
 							}
 						}
 					}

@@ -25,6 +25,8 @@
  */
 package edu.gcsc.lua;
 
+import java.util.List;
+
 public class CompletionInfo {
 	LuaResource resource;
 	CompletionType type;
@@ -34,6 +36,16 @@ public class CompletionInfo {
 	int pos;
 	boolean local;
 	int relevance;
+	
+	List<FunctionParameter> parameter;
+	
+	public List<FunctionParameter> getParameter() {
+		return parameter;
+	}
+	
+	public void setParameter(List<FunctionParameter> parameter) {
+		this.parameter = parameter;
+	}
 
 	public LuaResource getResource() {
 		return resource;

@@ -119,8 +119,9 @@ public class LuaSyntaxAnalyzerTest {
 		// only n shows.
 		assertEquals("FUNCTION:foo; FUNCTION:test;",
 				toString(an.getCompletions()));
-		assertEquals(1, an.getFunctionParams("foo").size());
-		assertEquals("n", an.getFunctionParams("foo").get(0).getParamName());
+		assertEquals(1, an.getFunctions().get("foo1").getParameter().size());
+		assertEquals("n", an.getFunctions().get("foo1").getParameter().get(0)
+				.getParamName());
 	}
 
 	@Test
@@ -169,7 +170,8 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals(
 				"FUNCTION:paramsTest; local VARIABLE:a; local VARIABLE:b; local VARIABLE:c;",
 				toString(an.getCompletions()));
-		assertEquals(3, an.getFunctionParams("paramsTest").size());
+		assertEquals(3, an.getFunctions().get("paramsTest3").getParameter()
+				.size());
 	}
 
 	@Test
@@ -179,7 +181,8 @@ public class LuaSyntaxAnalyzerTest {
 		an = createAndRunTestAnalyzer(
 				"function paramsTest(a,b,c) return 5 end", c);
 		assertEquals("FUNCTION:paramsTest;", toString(an.getCompletions()));
-		assertEquals(3, an.getFunctionParams("paramsTest").size());
+		assertEquals(3, an.getFunctions().get("paramsTest3").getParameter()
+				.size());
 	}
 
 	@Test
@@ -188,7 +191,7 @@ public class LuaSyntaxAnalyzerTest {
 		CaretInfo c = CaretInfo.newInstance(40);
 		an = createAndRunTestAnalyzer("foo = function (n)\nreturn n*2\nend", c);
 		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
-		assertEquals(1, an.getFunctionParams("foo").size());
+		assertEquals(1, an.getFunctions().get("foo1").getParameter().size());
 	}
 
 	@Test
@@ -200,7 +203,7 @@ public class LuaSyntaxAnalyzerTest {
 		assertEquals(
 				"FUNCTION:test; local VARIABLE:arm; local VARIABLE:be; local VARIABLE:crushed; VARIABLE:fun;",
 				toString(an.getCompletions()));
-		assertEquals(3, an.getFunctionParams("test").size());
+		assertEquals(3, an.getFunctions().get("test3").getParameter().size());
 	}
 
 	@Test
@@ -458,55 +461,55 @@ public class LuaSyntaxAnalyzerTest {
 				CaretInfo.HOME);
 		assertEquals("VARIABLE:A; VARIABLE:A[];", toString(an.getCompletions()));
 	}
-	
+
 	@Test
 	public void stringArrayTables() throws Exception {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer("a = { \"a\", \"b\" }",
 				CaretInfo.HOME);
 		assertEquals("VARIABLE:a;", toString(an.getCompletions()));
 	}
-	
+
 	@Test
 	public void tablesWithVariableIndex() throws Exception {
 		String script = "a = {}\ni=5\na[i]=10";
-		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script,
-				CaretInfo.HOME);
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
 		assertEquals("VARIABLE:a; VARIABLE:i;", toString(an.getCompletions()));
-		
+
 	}
-	
+
 	@Test
 	public void nestedTables() throws Exception {
 		String script = "outer = { firstInner = { inner = {1}}}";
-		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script,
-				CaretInfo.HOME);
-		assertEquals("VARIABLE:outer; VARIABLE:outer.firstInner; VARIABLE:outer.firstInner.inner;", toString(an.getCompletions()));
-		
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals(
+				"VARIABLE:outer; VARIABLE:outer.firstInner; VARIABLE:outer.firstInner.inner;",
+				toString(an.getCompletions()));
+
 	}
-	
+
 	@Test
-	public void localIndexedTablesGoGlobal() throws Exception
-	{
+	public void localIndexedTablesGoGlobal() throws Exception {
 		String script = "function foo()\n  local tbl = {}\n  tbl[1]=0\n  return tbl[1]\nend\n";
-		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script,
-				CaretInfo.HOME);
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
 		assertEquals("FUNCTION:foo;", toString(an.getCompletions()));
-		
+
 	}
-	
+
 	@Test
-	public void nestedTablesWithVariableIdx() throws Exception
-	{
+	public void nestedTablesWithVariableIdx() throws Exception {
 		String script = "util = {}\nutil.args = {}\nname=1\nutil.args[name] = 4";
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
-		assertEquals("VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[];", toString(an.getCompletions()));
+		assertEquals(
+				"VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[];",
+				toString(an.getCompletions()));
 	}
-	
+
 	@Test
-	public void nestedTablesWithVariableIdx2() throws Exception
-	{
+	public void nestedTablesWithVariableIdx2() throws Exception {
 		String script = "util = {}\nutil.args = {}\nname=1\nutil.args[name] = {}\nutil.args[name].default = 5";
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
-		assertEquals("VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[]; VARIABLE:util.args[].default;", toString(an.getCompletions()));
+		assertEquals(
+				"VARIABLE:name; VARIABLE:util; VARIABLE:util.args; VARIABLE:util.args[]; VARIABLE:util.args[].default;",
+				toString(an.getCompletions()));
 	}
 }
