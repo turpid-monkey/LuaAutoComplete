@@ -3,4 +3,5 @@
 /.settings/
 /.classpath
 /.project
-/.nb-gradle/private/
+/.nb-gradle
+/.gradle
