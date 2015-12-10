@@ -26,6 +26,7 @@
 package edu.gcsc.lua;
 
 import static edu.gcsc.lua.LuaParseTreeUtil.col;
+import static edu.gcsc.lua.LuaParseTreeUtil.getLastChildRuleContextRecursive;
 import static edu.gcsc.lua.LuaParseTreeUtil.getParentStatContext;
 import static edu.gcsc.lua.LuaParseTreeUtil.hasParentRuleContext;
 import static edu.gcsc.lua.LuaParseTreeUtil.line;
@@ -313,6 +314,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			// is it a nested table? if so, let's build the proper nested table
 			// name
 			TableconstructorContext nestedCtx = ctx;
+			int depth = 0;
 			while ((nestedCtx = LuaParseTreeUtil.getParentRuleContext(
 					nestedCtx, LuaParser.RULE_tableconstructor,
 					TableconstructorContext.class)) != null) {
@@ -320,9 +322,8 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 				tableName.insert(
 						idx,
 						DOT
-								+ start(LuaParseTreeUtil.getChildRuleContext(
-										nestedCtx, LuaParser.RULE_fieldlist,
-										FieldlistContext.class)));
+								+ start(getLastChildRuleContextRecursive(
+										nestedCtx, FieldContext.class, LuaParser.RULE_fieldlist, LuaParser.RULE_field)));
 			}
 
 			// inline declaration of a table in a for/if block, do nothing

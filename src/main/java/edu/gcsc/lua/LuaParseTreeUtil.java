@@ -27,6 +27,10 @@ package edu.gcsc.lua;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
@@ -76,6 +80,21 @@ public class LuaParseTreeUtil {
 		return null;
 	}
 
+	public static <T extends ParserRuleContext> T getLastChildRuleContext(
+			final ParserRuleContext parent, final int ruleIdx,
+			final Class<? extends T> t) {
+		if (parent.children == null)
+			return null;
+		for (int i = parent.children.size() - 1; i >= 0; i--) {
+			ParseTree child = parent.children.get(i);
+
+			if (child instanceof ParserRuleContext
+					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
+				return t.cast(child);
+		}
+		return null;
+	}
+
 	public static <T extends ParserRuleContext> T getChildRuleContextByIdx(
 			final ParserRuleContext parent, final int idx, final int ruleIdx,
 			final Class<? extends T> t) {
@@ -90,20 +109,6 @@ public class LuaParseTreeUtil {
 				}
 		}
 		return null;
-	}
-
-	public static <T extends ParserRuleContext> T getLastChildRuleContext(
-			final ParserRuleContext parent, final int ruleIdx,
-			final Class<? extends T> t) {
-		if (parent.children == null)
-			return null;
-		T r = null;
-		for (ParseTree child : parent.children) {
-			if (child instanceof ParserRuleContext
-					&& ((ParserRuleContext) child).getRuleIndex() == ruleIdx)
-				r = t.cast(child);
-		}
-		return r;
 	}
 
 	public static int countChildRuleContextInstances(
@@ -133,6 +138,20 @@ public class LuaParseTreeUtil {
 		return t.cast(childCtx);
 	}
 
+	public static <T extends ParserRuleContext> T getLastChildRuleContextRecursive(
+			final ParserRuleContext parent, final Class<? extends T> t,
+			final int... path) {
+		ParserRuleContext childCtx = parent;
+		for (int ruleIdx : path) {
+			childCtx = getLastChildRuleContext(childCtx, ruleIdx,
+					ParserRuleContext.class);
+			if (childCtx == null) {
+				return null;
+			}
+		}
+		return t.cast(childCtx);
+	}
+	
 	public static String start(ParserRuleContext ctx) {
 		return ctx.getStart().getText();
 	}

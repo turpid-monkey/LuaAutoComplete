@@ -536,4 +536,12 @@ public class LuaSyntaxAnalyzerTest {
 				"FUNCTION:test; FUNCTION:util.foo1;",
 				toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void polyNestedTables() throws Exception
+	{
+		String script = "problem = { foo = { foobar = 1, foofoo =2}, bar ={ barfoo =3, barbar =4}}";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("VARIABLE:problem; VARIABLE:problem.bar; VARIABLE:problem.bar.barbar; VARIABLE:problem.bar.barfoo; VARIABLE:problem.foo; VARIABLE:problem.foo.foobar; VARIABLE:problem.foo.foofoo;", toString(an.getCompletions()));
+	}
 }
