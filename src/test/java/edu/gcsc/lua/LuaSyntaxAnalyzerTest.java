@@ -544,4 +544,12 @@ public class LuaSyntaxAnalyzerTest {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
 		assertEquals("VARIABLE:problem; VARIABLE:problem.bar; VARIABLE:problem.bar.barbar; VARIABLE:problem.bar.barfoo; VARIABLE:problem.foo; VARIABLE:problem.foo.foobar; VARIABLE:problem.foo.foofoo;", toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void nestedTableFunctionDef() throws Exception
+	{
+		String script = "problem = { foo = function(a,b) return a+b end }";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("FUNCTION:problem.foo2; VARIABLE:problem; VARIABLE:problem.foo;", toString(an.getCompletions()));
+	}
 }

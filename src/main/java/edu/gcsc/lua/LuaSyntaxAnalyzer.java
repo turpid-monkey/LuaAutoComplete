@@ -50,6 +50,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -66,7 +67,9 @@ import edu.gcsc.lua.grammar.LuaParser.NamelistContext;
 import edu.gcsc.lua.grammar.LuaParser.NumberContext;
 import edu.gcsc.lua.grammar.LuaParser.StatContext;
 import edu.gcsc.lua.grammar.LuaParser.TableconstructorContext;
+import edu.gcsc.lua.grammar.LuaParser.VarContext;
 import edu.gcsc.lua.grammar.LuaParser.VarSuffixContext;
+import edu.gcsc.lua.grammar.LuaParser.VarlistContext;
 import edu.gcsc.lua.visitors.LuaCompletionVisitor;
 
 /**
@@ -314,7 +317,6 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			// is it a nested table? if so, let's build the proper nested table
 			// name
 			TableconstructorContext nestedCtx = ctx;
-			int depth = 0;
 			while ((nestedCtx = LuaParseTreeUtil.getParentRuleContext(
 					nestedCtx, LuaParser.RULE_tableconstructor,
 					TableconstructorContext.class)) != null) {
@@ -325,7 +327,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 								+ start(getLastChildRuleContextRecursive(
 										nestedCtx, FieldContext.class, LuaParser.RULE_fieldlist, LuaParser.RULE_field)));
 			}
-
+			
 			// inline declaration of a table in a for/if block, do nothing
 			if (FOR.equals(tableName) || IF.equals(tableName))
 				return;
@@ -465,6 +467,48 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 		boolean isClassMember(String variable) {
 			return variable.startsWith(SELF);
 		}
+		
+		
+		String buildVariableNameFromContext(ParserRuleContext ctx)
+		{
+			StringBuffer result = new StringBuffer();
+			Stack<String> stack = buildVariableNameStackFromContext(ctx);
+			if (stack.empty()) return null;
+			result.append(stack.pop());
+			while (!stack.empty())
+			{
+				result.append('.');
+				result.append(stack.pop());
+			}
+			return result.toString();
+		}
+		
+		Stack<String> buildVariableNameStackFromContext(ParserRuleContext ctx)
+		{
+			Stack<String> stack = new Stack<String>();
+			RuleContext parent = ctx; 
+			while ((parent = parent.parent)!=null)
+			{
+				if (parent instanceof FieldContext)
+				{
+				    stack.add(start((FieldContext)parent));
+				}
+				else if (parent instanceof VarContext)
+				{
+					stack.add(start((VarContext)parent));
+				}
+				else if (parent instanceof StatContext)
+				{
+					ParseTree first = ((StatContext) parent).children.get(0);
+					if (first instanceof VarlistContext)
+					{
+						stack.add(start((VarlistContext)first));
+					}
+					
+				}
+			}
+			return stack;
+		}
 
 		@Override
 		public void exitFuncbody(FuncbodyContext ctx) {
@@ -477,7 +521,7 @@ public class LuaSyntaxAnalyzer extends LuaSyntaxInfo {
 			} else if (LOCAL.equals(startText)) {
 				currentFunction = statCtx.getChild(2).getText();
 			} else {
-				currentFunction = startText;
+				currentFunction = buildVariableNameFromContext(ctx);
 				anonFunction = true;
 			}
 
