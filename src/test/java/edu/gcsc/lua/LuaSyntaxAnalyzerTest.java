@@ -552,4 +552,28 @@ public class LuaSyntaxAnalyzerTest {
 		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
 		assertEquals("FUNCTION:problem.foo2; VARIABLE:problem; VARIABLE:problem.foo;", toString(an.getCompletions()));
 	}
+	
+	@Test
+	public void doubleNestedTableFunctionDef() throws Exception
+	{
+		String script = "problem = { bar = { foo = function(a,b) return a+b end }}";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("FUNCTION:problem.bar.foo2; VARIABLE:problem; VARIABLE:problem.bar; VARIABLE:problem.bar.foo;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void doubleNestedTableFunctionDef2() throws Exception
+	{
+		String script = "problem = { bar = { boo = 1, foo = function(a,b) return a+b end }}";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("FUNCTION:problem.bar.foo2; VARIABLE:problem; VARIABLE:problem.bar; VARIABLE:problem.bar.boo; VARIABLE:problem.bar.foo;", toString(an.getCompletions()));
+	}
+	
+	@Test
+	public void doubleNestedTableFunctionDef3() throws Exception
+	{
+		String script = "problem = { foo = function(a,b) return a+b end, boo = 1}";
+		LuaSyntaxAnalyzer an = createAndRunTestAnalyzer(script, CaretInfo.HOME);
+		assertEquals("FUNCTION:problem.foo2; VARIABLE:problem; VARIABLE:problem.boo; VARIABLE:problem.foo;", toString(an.getCompletions()));
+	}
 }
