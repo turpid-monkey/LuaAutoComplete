@@ -1,4 +1,4 @@
-LuaCompletionProvider
+LuaAutoComplete
 =====================
 [![Build Status](https://travis-ci.org/turpid-monkey/LuaAutoComplete.svg?branch=master)](https://travis-ci.org/turpid-monkey/LuaAutoComplete/) [![Coverage Status](https://img.shields.io/coveralls/turpid-monkey/LuaAutoComplete.svg)](https://coveralls.io/r/turpid-monkey/LuaAutoComplete)
 =====================
